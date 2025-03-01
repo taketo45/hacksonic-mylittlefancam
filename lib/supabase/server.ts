@@ -16,49 +16,59 @@ export function createClient() {
         getUser: () => Promise.resolve({ data: { user: null }, error: null }),
       },
       // データベース操作用のメソッドをダミー実装
-      from: () => ({
-        select: () => ({
-          eq: () => ({
-            single: () => Promise.resolve({ data: null, error: null }),
-            maybeSingle: () => Promise.resolve({ data: null, error: null }),
-            order: () => ({
-              limit: () => Promise.resolve({ data: [], error: null })
-            }),
-            limit: () => Promise.resolve({ data: [], error: null }),
-          }),
+      from: (table) => {
+        // 共通のダミーレスポンス生成関数
+        const dummyResponse = (data = null) => Promise.resolve({ data, error: null });
+        
+        // 共通のメソッドチェーン用オブジェクト
+        const createFilterBuilder = () => ({
+          single: () => dummyResponse(null),
+          maybeSingle: () => dummyResponse(null),
+          limit: () => dummyResponse([]),
           order: () => ({
-            limit: () => Promise.resolve({ data: [], error: null })
+            limit: () => dummyResponse([])
           }),
-          limit: () => Promise.resolve({ data: [], error: null }),
-          in: () => ({
-            order: () => ({
-              limit: () => Promise.resolve({ data: [], error: null })
+        });
+        
+        return {
+          select: () => {
+            return {
+              eq: () => createFilterBuilder(),
+              order: () => ({
+                limit: () => dummyResponse([])
+              }),
+              limit: () => dummyResponse([]),
+              in: () => ({
+                order: () => ({
+                  limit: () => dummyResponse([])
+                }),
+                limit: () => dummyResponse([])
+              }),
+              single: () => dummyResponse(null),
+              maybeSingle: () => dummyResponse(null),
+            }
+          },
+          insert: (data) => ({
+            select: () => dummyResponse(data),
+            returning: () => dummyResponse(data),
+          }),
+          update: (data) => ({
+            eq: () => ({
+              select: () => dummyResponse(data),
+              match: () => dummyResponse(data),
             }),
-            limit: () => Promise.resolve({ data: [], error: null }),
+            match: () => dummyResponse(data),
           }),
-          single: () => Promise.resolve({ data: null, error: null }),
-          maybeSingle: () => Promise.resolve({ data: null, error: null }),
-        }),
-        insert: () => ({
-          select: () => Promise.resolve({ data: null, error: null }),
-          returning: () => Promise.resolve({ data: null, error: null }),
-        }),
-        update: () => ({
-          eq: () => ({
-            select: () => Promise.resolve({ data: null, error: null }),
-            match: () => Promise.resolve({ data: null, error: null }),
+          delete: () => ({
+            eq: () => dummyResponse(null),
+            match: () => dummyResponse(null),
           }),
-          match: () => Promise.resolve({ data: null, error: null }),
-        }),
-        delete: () => ({
-          eq: () => Promise.resolve({ data: null, error: null }),
-          match: () => Promise.resolve({ data: null, error: null }),
-        }),
-      }),
+        }
+      },
       storage: {
-        from: () => ({
-          upload: () => Promise.resolve({ data: null, error: null }),
-          getPublicUrl: () => ({ data: { publicUrl: '' } }),
+        from: (bucket) => ({
+          upload: () => Promise.resolve({ data: { path: `${bucket}/dummy-path` }, error: null }),
+          getPublicUrl: () => ({ data: { publicUrl: `https://dummy-url.com/${bucket}/dummy-file` } }),
           list: () => Promise.resolve({ data: [], error: null }),
           remove: () => Promise.resolve({ data: null, error: null }),
         }),

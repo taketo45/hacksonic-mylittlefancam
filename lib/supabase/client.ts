@@ -22,10 +22,20 @@ export function createClient() {
         // 共通のダミーレスポンス生成関数
         const dummyResponse = (data = null) => Promise.resolve({ data, error: null });
         
+        // 共通のメソッドチェーン用オブジェクト
+        const createFilterBuilder = () => ({
+          single: () => dummyResponse(null),
+          maybeSingle: () => dummyResponse(null),
+          limit: () => dummyResponse([]),
+          order: () => ({
+            limit: () => dummyResponse([])
+          }),
+        });
+        
         return {
           select: () => {
             return {
-              eq: () => dummyResponse([]),
+              eq: () => createFilterBuilder(),
               order: () => ({
                 limit: () => dummyResponse([])
               }),
