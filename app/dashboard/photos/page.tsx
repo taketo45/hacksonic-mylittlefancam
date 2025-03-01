@@ -4,6 +4,10 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import Image from 'next/image'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Slider } from '@/components/ui/slider'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 
 // 写真の型定義
 interface Photo {
@@ -16,6 +20,21 @@ interface Photo {
   hasUserFace: boolean
   price: number
   isPurchased: boolean
+  smileScore?: number // 笑顔度（0-100）
+  detectedFaces?: {
+    id: string;
+    boundingBox: {
+      left: number;
+      top: number;
+      width: number;
+      height: number;
+    };
+    matchedUser?: {
+      id: string;
+      name: string;
+    };
+    smileScore?: number;
+  }[];
 }
 
 export default function PhotosPage() {
@@ -25,6 +44,9 @@ export default function PhotosPage() {
   const [selectedEvent, setSelectedEvent] = useState<string | null>(null)
   const [events, setEvents] = useState<{ id: string; name: string }[]>([])
   const [cartItems, setCartItems] = useState<string[]>([])
+  const [activeTab, setActiveTab] = useState('all')
+  const [minSmileScore, setMinSmileScore] = useState(0)
+  const [user, setUser] = useState<any>(null)
 
   // 写真とイベントの取得
   useEffect(() => {
@@ -35,6 +57,10 @@ export default function PhotosPage() {
       try {
         const supabase = createClient()
         
+        // ユーザー情報を取得
+        const { data: { user } } = await supabase.auth.getUser()
+        setUser(user)
+        
         // イベントの取得（ハッカソンデモ用のモックデータ）
         const mockEvents = [
           { id: 'event-1', name: '保育園夏祭り 2023' },
@@ -44,17 +70,53 @@ export default function PhotosPage() {
         setEvents(mockEvents)
         
         // 写真の取得（ハッカソンデモ用のモックデータ）
-        const mockPhotos: Photo[] = Array.from({ length: 20 }, (_, i) => ({
-          id: `photo-${i + 1}`,
-          url: `https://picsum.photos/800/600?random=${i + 1}`,
-          thumbnailUrl: `https://picsum.photos/400/300?random=${i + 1}`,
-          title: `写真 ${i + 1}`,
-          eventName: mockEvents[Math.floor(i / 7)].name,
-          takenAt: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
-          hasUserFace: Math.random() > 0.3,
-          price: 500,
-          isPurchased: Math.random() > 0.8,
-        }))
+        const mockPhotos: Photo[] = Array.from({ length: 20 }, (_, i) => {
+          // 各写真に1〜4人の顔を検出
+          const faceCount = Math.floor(Math.random() * 4) + 1
+          const detectedFaces = Array.from({ length: faceCount }, (_, j) => {
+            // ランダムな位置とサイズの顔を生成
+            const left = 0.1 + Math.random() * 0.7
+            const top = 0.1 + Math.random() * 0.7
+            const width = 0.1 + Math.random() * 0.2
+            const height = width * (1 + Math.random() * 0.2)
+            const smileScore = Math.floor(Math.random() * 100)
+            
+            // 30%の確率でユーザー自身の顔とマッチング
+            const isUserFace = Math.random() > 0.7
+            
+            return {
+              id: `face-${i}-${j}`,
+              boundingBox: {
+                left,
+                top,
+                width,
+                height
+              },
+              matchedUser: isUserFace ? {
+                id: 'user-1',
+                name: 'あなた'
+              } : undefined,
+              smileScore
+            }
+          })
+          
+          // 写真全体の笑顔度は検出された顔の笑顔度の平均
+          const avgSmileScore = detectedFaces.reduce((sum, face) => sum + (face.smileScore || 0), 0) / detectedFaces.length
+          
+          return {
+            id: `photo-${i + 1}`,
+            url: `https://picsum.photos/800/600?random=${i + 1}`,
+            thumbnailUrl: `https://picsum.photos/400/300?random=${i + 1}`,
+            title: `写真 ${i + 1}`,
+            eventName: mockEvents[Math.floor(i / 7)].name,
+            takenAt: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
+            hasUserFace: detectedFaces.some(face => face.matchedUser?.name === 'あなた'),
+            price: 500,
+            isPurchased: Math.random() > 0.8,
+            smileScore: Math.round(avgSmileScore),
+            detectedFaces
+          }
+        })
         
         setPhotos(mockPhotos)
       } catch (err) {
@@ -85,12 +147,38 @@ export default function PhotosPage() {
   }
 
   // イベントでフィルタリングされた写真
-  const filteredPhotos = selectedEvent
+  const filteredByEvent = selectedEvent
     ? photos.filter((photo) => photo.eventName === events.find((e) => e.id === selectedEvent)?.name)
     : photos
 
-  // 自分が写っている写真
-  const photosWithUserFace = filteredPhotos.filter((photo) => photo.hasUserFace)
+  // 笑顔度でフィルタリング
+  const filteredBySmile = filteredByEvent.filter(photo => 
+    (photo.smileScore || 0) >= minSmileScore
+  )
+  
+  // タブに応じたフィルタリング
+  const getFilteredPhotos = () => {
+    switch (activeTab) {
+      case 'user':
+        return filteredBySmile.filter(photo => photo.hasUserFace)
+      case 'smile':
+        return [...filteredBySmile].sort((a, b) => (b.smileScore || 0) - (a.smileScore || 0))
+      case 'all':
+      default:
+        return filteredBySmile
+    }
+  }
+  
+  const filteredPhotos = getFilteredPhotos()
+
+  // 笑顔度に応じた色を返す
+  const getSmileColor = (score: number) => {
+    if (score >= 80) return 'bg-green-500'
+    if (score >= 60) return 'bg-green-400'
+    if (score >= 40) return 'bg-yellow-400'
+    if (score >= 20) return 'bg-orange-400'
+    return 'bg-red-400'
+  }
 
   if (isLoading) {
     return (
@@ -118,7 +206,7 @@ export default function PhotosPage() {
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">写真一覧</h1>
         <p className="mt-1 text-gray-600">
-          イベントで撮影された写真を閲覧できます。あなたが写っている写真には「あなたが写っています」のラベルが表示されます。
+          イベントで撮影された写真を閲覧できます。顔認識技術により、あなたが写っている写真や笑顔度の高い写真を簡単に見つけられます。
         </p>
       </div>
 
@@ -168,74 +256,35 @@ export default function PhotosPage() {
         </div>
       </div>
 
-      {photosWithUserFace.length > 0 && (
-        <div className="mb-8">
-          <h2 className="mb-4 text-xl font-semibold text-gray-800">あなたが写っている写真</h2>
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-            {photosWithUserFace.map((photo) => (
-              <div
-                key={photo.id}
-                className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow transition-all hover:shadow-md"
-              >
-                <div className="relative">
-                  <Image
-                    src={photo.thumbnailUrl}
-                    alt={photo.title}
-                    width={400}
-                    height={300}
-                    className="h-48 w-full object-cover"
-                  />
-                  <div className="absolute top-2 left-2">
-                    <span className="rounded-full bg-milab-500 px-2 py-1 text-xs font-semibold text-white">
-                      あなたが写っています
-                    </span>
-                  </div>
-                  {photo.isPurchased && (
-                    <div className="absolute top-2 right-2">
-                      <span className="rounded-full bg-green-500 px-2 py-1 text-xs font-semibold text-white">
-                        購入済み
-                      </span>
-                    </div>
-                  )}
-                </div>
-                <div className="p-4">
-                  <h3 className="text-sm font-medium text-gray-900">{photo.title}</h3>
-                  <p className="mt-1 text-xs text-gray-500">{photo.eventName}</p>
-                  <p className="mt-1 text-xs text-gray-500">撮影日: {formatDate(photo.takenAt)}</p>
-                  <div className="mt-4 flex items-center justify-between">
-                    <span className="text-sm font-medium text-gray-900">¥{photo.price}</span>
-                    {photo.isPurchased ? (
-                      <Link
-                        href={`/dashboard/photos/${photo.id}`}
-                        className="rounded-md bg-gray-100 px-3 py-1 text-xs font-medium text-gray-800 hover:bg-gray-200"
-                      >
-                        詳細を見る
-                      </Link>
-                    ) : cartItems.includes(photo.id) ? (
-                      <button
-                        onClick={() => removeFromCart(photo.id)}
-                        className="rounded-md bg-red-100 px-3 py-1 text-xs font-medium text-red-800 hover:bg-red-200"
-                      >
-                        カートから削除
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => addToCart(photo.id)}
-                        className="rounded-md bg-milab-100 px-3 py-1 text-xs font-medium text-milab-800 hover:bg-milab-200"
-                      >
-                        カートに追加
-                      </button>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
+      <div className="mb-6">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+          <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab} className="w-full md:w-auto">
+            <TabsList>
+              <TabsTrigger value="all">すべての写真</TabsTrigger>
+              <TabsTrigger value="user">あなたが写っている写真</TabsTrigger>
+              <TabsTrigger value="smile">笑顔度順</TabsTrigger>
+            </TabsList>
+          </Tabs>
+          
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-gray-700">最低笑顔度:</span>
+            <Slider
+              value={[minSmileScore]}
+              onValueChange={(values) => setMinSmileScore(values[0])}
+              max={100}
+              step={10}
+              className="w-40"
+            />
+            <span className="min-w-[2rem] text-sm text-gray-700">{minSmileScore}%</span>
           </div>
         </div>
-      )}
+      </div>
 
-      <div>
-        <h2 className="mb-4 text-xl font-semibold text-gray-800">すべての写真</h2>
+      {filteredPhotos.length === 0 ? (
+        <div className="rounded-lg border border-gray-200 bg-gray-50 p-8 text-center">
+          <p className="text-gray-500">条件に一致する写真がありません</p>
+        </div>
+      ) : (
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           {filteredPhotos.map((photo) => (
             <div
@@ -250,18 +299,46 @@ export default function PhotosPage() {
                   height={300}
                   className="h-48 w-full object-cover"
                 />
-                {photo.hasUserFace && (
-                  <div className="absolute top-2 left-2">
-                    <span className="rounded-full bg-milab-500 px-2 py-1 text-xs font-semibold text-white">
-                      あなたが写っています
-                    </span>
+                
+                {/* 顔の位置を示すオーバーレイ */}
+                {photo.detectedFaces?.map((face, index) => (
+                  <div
+                    key={face.id}
+                    className={`absolute border-2 ${face.matchedUser ? 'border-green-500' : 'border-white'} pointer-events-none`}
+                    style={{
+                      left: `${face.boundingBox.left * 100}%`,
+                      top: `${face.boundingBox.top * 100}%`,
+                      width: `${face.boundingBox.width * 100}%`,
+                      height: `${face.boundingBox.height * 100}%`,
+                    }}
+                  >
+                    {face.matchedUser && (
+                      <div className="absolute -top-6 left-0 bg-black bg-opacity-70 text-white text-xs px-1 py-0.5 rounded whitespace-nowrap">
+                        {face.matchedUser.name}
+                      </div>
+                    )}
                   </div>
-                )}
+                ))}
+                
+                <div className="absolute top-2 left-2 flex flex-col gap-1">
+                  {photo.hasUserFace && (
+                    <Badge variant="secondary" className="bg-milab-500 text-white hover:bg-milab-600">
+                      あなたが写っています
+                    </Badge>
+                  )}
+                  
+                  {photo.smileScore !== undefined && (
+                    <Badge variant="secondary" className={`${getSmileColor(photo.smileScore)} text-white`}>
+                      笑顔度: {photo.smileScore}%
+                    </Badge>
+                  )}
+                </div>
+                
                 {photo.isPurchased && (
                   <div className="absolute top-2 right-2">
-                    <span className="rounded-full bg-green-500 px-2 py-1 text-xs font-semibold text-white">
+                    <Badge variant="secondary" className="bg-green-500 text-white hover:bg-green-600">
                       購入済み
-                    </span>
+                    </Badge>
                   </div>
                 )}
               </div>
@@ -279,26 +356,30 @@ export default function PhotosPage() {
                       詳細を見る
                     </Link>
                   ) : cartItems.includes(photo.id) ? (
-                    <button
+                    <Button
+                      variant="destructive"
+                      size="sm"
                       onClick={() => removeFromCart(photo.id)}
-                      className="rounded-md bg-red-100 px-3 py-1 text-xs font-medium text-red-800 hover:bg-red-200"
+                      className="h-7 px-3 text-xs"
                     >
                       カートから削除
-                    </button>
+                    </Button>
                   ) : (
-                    <button
+                    <Button
+                      variant="secondary"
+                      size="sm"
                       onClick={() => addToCart(photo.id)}
-                      className="rounded-md bg-milab-100 px-3 py-1 text-xs font-medium text-milab-800 hover:bg-milab-200"
+                      className="h-7 px-3 text-xs"
                     >
                       カートに追加
-                    </button>
+                    </Button>
                   )}
                 </div>
               </div>
             </div>
           ))}
         </div>
-      </div>
+      )}
     </div>
   )
 } 
