@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
+import Image from 'next/image'
 
 // 購入履歴の型定義
 interface Purchase {
@@ -45,83 +46,80 @@ export default function PurchasesPage() {
         const mockPurchases: Purchase[] = [
           {
             id: 'purchase-1',
-            date: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+            date: '2023-12-01',
             totalAmount: 1200,
             status: 'completed',
             items: [
               {
                 id: 'item-1',
                 photoId: 'photo-1',
-                thumbnailUrl: 'https://source.unsplash.com/random/400x300?sig=501',
+                thumbnailUrl: 'https://picsum.photos/400/300?random=501',
                 title: '写真 1',
-                eventName: '保育園夏祭り 2023',
-                price: 500,
-                printOption: 'l',
-                printPrice: 200,
-                printStatus: 'completed',
-              },
-              {
-                id: 'item-2',
-                photoId: 'photo-2',
-                thumbnailUrl: 'https://source.unsplash.com/random/400x300?sig=502',
-                title: '写真 2',
                 eventName: '保育園夏祭り 2023',
                 price: 500,
                 printOption: 'none',
                 printPrice: 0,
+              },
+              {
+                id: 'item-2',
+                photoId: 'photo-2',
+                thumbnailUrl: 'https://picsum.photos/400/300?random=502',
+                title: '写真 2',
+                eventName: '保育園夏祭り 2023',
+                price: 700,
+                printOption: 'l',
+                printPrice: 200,
               },
             ],
           },
           {
             id: 'purchase-2',
-            date: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(),
-            totalAmount: 800,
+            date: '2023-11-15',
+            totalAmount: 1500,
             status: 'shipped',
             items: [
               {
                 id: 'item-3',
                 photoId: 'photo-3',
-                thumbnailUrl: 'https://source.unsplash.com/random/400x300?sig=503',
+                thumbnailUrl: 'https://picsum.photos/400/300?random=503',
                 title: '写真 3',
                 eventName: '運動会 2023',
                 price: 500,
-                printOption: 'l',
-                printPrice: 200,
-                printStatus: 'shipped',
+                printOption: 'none',
+                printPrice: 0,
               },
               {
                 id: 'item-4',
                 photoId: 'photo-4',
-                thumbnailUrl: 'https://source.unsplash.com/random/400x300?sig=504',
+                thumbnailUrl: 'https://picsum.photos/400/300?random=504',
                 title: '写真 4',
                 eventName: '運動会 2023',
-                price: 100,
-                printOption: 'none',
-                printPrice: 0,
+                price: 1000,
+                printOption: '2l',
+                printPrice: 300,
               },
             ],
           },
           {
             id: 'purchase-3',
-            date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-            totalAmount: 1300,
+            date: '2023-10-20',
+            totalAmount: 1000,
             status: 'processing',
             items: [
               {
                 id: 'item-5',
                 photoId: 'photo-5',
-                thumbnailUrl: 'https://source.unsplash.com/random/400x300?sig=505',
+                thumbnailUrl: 'https://picsum.photos/400/300?random=505',
                 title: '写真 5',
                 eventName: 'クリスマス会 2023',
                 price: 500,
-                printOption: '2l',
-                printPrice: 300,
-                printStatus: 'printing',
+                printOption: 'none',
+                printPrice: 0,
               },
               {
                 id: 'item-6',
                 photoId: 'photo-6',
-                thumbnailUrl: 'https://source.unsplash.com/random/400x300?sig=506',
+                thumbnailUrl: 'https://picsum.photos/400/300?random=506',
                 title: '写真 6',
                 eventName: 'クリスマス会 2023',
                 price: 500,
@@ -285,9 +283,11 @@ export default function PurchasesPage() {
                       <li key={item.id} className="py-4">
                         <div className="flex flex-col gap-4 sm:flex-row">
                           <div className="h-24 w-24 flex-shrink-0 overflow-hidden rounded-md">
-                            <img
+                            <Image
                               src={item.thumbnailUrl}
                               alt={item.title}
+                              width={128}
+                              height={128}
                               className="h-full w-full object-cover"
                             />
                           </div>

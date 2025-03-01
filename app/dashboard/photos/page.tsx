@@ -46,8 +46,8 @@ export default function PhotosPage() {
         // 写真の取得（ハッカソンデモ用のモックデータ）
         const mockPhotos: Photo[] = Array.from({ length: 20 }, (_, i) => ({
           id: `photo-${i + 1}`,
-          url: `https://source.unsplash.com/random/800x600?sig=${i + 1}`,
-          thumbnailUrl: `https://source.unsplash.com/random/400x300?sig=${i + 1}`,
+          url: `https://picsum.photos/800/600?random=${i + 1}`,
+          thumbnailUrl: `https://picsum.photos/400/300?random=${i + 1}`,
           title: `写真 ${i + 1}`,
           eventName: mockEvents[Math.floor(i / 7)].name,
           takenAt: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),

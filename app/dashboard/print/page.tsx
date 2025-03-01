@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import Image from 'next/image'
 
 // 印刷ジョブの型定義
 interface PrintJob {
@@ -31,13 +32,49 @@ export default function PrintPage() {
       try {
         const supabase = createClient()
         
+        // 印刷可能な写真を取得（ハッカソンデモ用のモックデータ）
+        const mockPrintablePhotos = [
+          {
+            id: 'photo-1',
+            photoUrl: 'https://picsum.photos/300/300?random=1',
+            title: '写真 1',
+            eventName: '保育園夏祭り 2023',
+            date: '2023-07-15',
+            printStatus: 'ready',
+          },
+          {
+            id: 'photo-2',
+            photoUrl: 'https://picsum.photos/300/300?random=2',
+            title: '写真 2',
+            eventName: '保育園夏祭り 2023',
+            date: '2023-07-15',
+            printStatus: 'ready',
+          },
+          {
+            id: 'photo-3',
+            photoUrl: 'https://picsum.photos/300/300?random=3',
+            title: '写真 3',
+            eventName: '運動会 2023',
+            date: '2023-10-10',
+            printStatus: 'processing',
+          },
+          {
+            id: 'photo-4',
+            photoUrl: 'https://picsum.photos/300/300?random=4',
+            title: '写真 4',
+            eventName: '運動会 2023',
+            date: '2023-10-10',
+            printStatus: 'completed',
+          },
+        ]
+
         // 印刷ジョブの取得（ハッカソンデモ用のモックデータ）
         // 実際の実装では、Supabaseからデータを取得する
         const mockJobs: PrintJob[] = [
           {
             id: '1',
             photoId: 'photo-1',
-            photoUrl: 'https://source.unsplash.com/random/300x300?sig=1',
+            photoUrl: 'https://picsum.photos/300/300?random=1',
             status: 'completed',
             createdAt: new Date(Date.now() - 3600000).toISOString(),
             updatedAt: new Date(Date.now() - 3540000).toISOString(),
@@ -49,7 +86,7 @@ export default function PrintPage() {
           {
             id: '2',
             photoId: 'photo-2',
-            photoUrl: 'https://source.unsplash.com/random/300x300?sig=2',
+            photoUrl: 'https://picsum.photos/300/300?random=2',
             status: 'printing',
             createdAt: new Date(Date.now() - 1800000).toISOString(),
             updatedAt: new Date(Date.now() - 1800000).toISOString(),
@@ -61,7 +98,7 @@ export default function PrintPage() {
           {
             id: '3',
             photoId: 'photo-3',
-            photoUrl: 'https://source.unsplash.com/random/300x300?sig=3',
+            photoUrl: 'https://picsum.photos/300/300?random=3',
             status: 'pending',
             createdAt: new Date(Date.now() - 900000).toISOString(),
             updatedAt: new Date(Date.now() - 900000).toISOString(),
@@ -73,7 +110,7 @@ export default function PrintPage() {
           {
             id: '4',
             photoId: 'photo-4',
-            photoUrl: 'https://source.unsplash.com/random/300x300?sig=4',
+            photoUrl: 'https://picsum.photos/300/300?random=4',
             status: 'failed',
             createdAt: new Date(Date.now() - 7200000).toISOString(),
             updatedAt: new Date(Date.now() - 7140000).toISOString(),
@@ -234,9 +271,11 @@ export default function PrintPage() {
                 <tr key={job.id} className="hover:bg-gray-50">
                   <td className="whitespace-nowrap px-6 py-4 text-sm font-medium text-gray-900">
                     <div className="h-12 w-12 overflow-hidden rounded-md">
-                      <img
+                      <Image
                         src={job.photoUrl}
                         alt={`写真 ${job.photoId}`}
+                        width={48}
+                        height={48}
                         className="h-full w-full object-cover"
                       />
                     </div>

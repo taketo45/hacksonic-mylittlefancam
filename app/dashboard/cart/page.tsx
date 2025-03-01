@@ -38,8 +38,8 @@ export default function CartPage() {
           {
             id: 'cart-1',
             photoId: 'photo-1',
-            photoUrl: 'https://source.unsplash.com/random/800x600?sig=401',
-            thumbnailUrl: 'https://source.unsplash.com/random/400x300?sig=401',
+            photoUrl: 'https://picsum.photos/800/600?random=401',
+            thumbnailUrl: 'https://picsum.photos/400/300?random=401',
             title: '写真 1',
             eventName: '保育園夏祭り 2023',
             price: 500,
@@ -49,8 +49,8 @@ export default function CartPage() {
           {
             id: 'cart-2',
             photoId: 'photo-2',
-            photoUrl: 'https://source.unsplash.com/random/800x600?sig=402',
-            thumbnailUrl: 'https://source.unsplash.com/random/400x300?sig=402',
+            photoUrl: 'https://picsum.photos/800/600?random=402',
+            thumbnailUrl: 'https://picsum.photos/400/300?random=402',
             title: '写真 2',
             eventName: '保育園夏祭り 2023',
             price: 500,
@@ -60,8 +60,8 @@ export default function CartPage() {
           {
             id: 'cart-3',
             photoId: 'photo-3',
-            photoUrl: 'https://source.unsplash.com/random/800x600?sig=403',
-            thumbnailUrl: 'https://source.unsplash.com/random/400x300?sig=403',
+            photoUrl: 'https://picsum.photos/800/600?random=403',
+            thumbnailUrl: 'https://picsum.photos/400/300?random=403',
             title: '写真 3',
             eventName: '運動会 2023',
             price: 500,

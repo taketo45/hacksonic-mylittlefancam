@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
+import Image from 'next/image'
 
 // 写真の型定義
 interface Photo {
@@ -53,22 +54,22 @@ export default function OshiWipePage() {
         // 写真の取得（ハッカソンデモ用のモックデータ）
         const mockPhotos: Photo[] = Array.from({ length: 8 }, (_, i) => ({
           id: `photo-${i + 1}`,
-          url: `https://source.unsplash.com/random/800x600?sig=${i + 201}`,
-          thumbnailUrl: `https://source.unsplash.com/random/400x300?sig=${i + 201}`,
+          url: `https://picsum.photos/800/600?random=${i + 201}`,
+          thumbnailUrl: `https://picsum.photos/400/300?random=${i + 201}`,
           title: `写真 ${i + 1}`,
           eventName: i < 4 ? '保育園夏祭り 2023' : '運動会 2023',
           takenAt: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
           hasUserFace: true,
-          isPurchased: i < 2,
+          isPurchased: i < 3,
         }))
         
         // 推し写真の取得（ハッカソンデモ用のモックデータ）
         const mockOshiPhotos: OshiPhoto[] = Array.from({ length: 6 }, (_, i) => ({
           id: `oshi-${i + 1}`,
-          url: `https://source.unsplash.com/random/300x300?sig=${i + 301}`,
-          thumbnailUrl: `https://source.unsplash.com/random/150x150?sig=${i + 301}`,
+          url: `https://picsum.photos/300/300?random=${i + 301}`,
+          thumbnailUrl: `https://picsum.photos/150/150?random=${i + 301}`,
           title: `推し写真 ${i + 1}`,
-          eventName: i < 3 ? '保育園夏祭り 2023' : '運動会 2023',
+          eventName: '推しライブ 2023',
           takenAt: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
           oshiName: i % 2 === 0 ? '山田先生' : '佐藤先生',
         }))
@@ -205,9 +206,11 @@ export default function OshiWipePage() {
                   onClick={() => handleSelectPhoto(photo)}
                 >
                   <div className="relative">
-                    <img
+                    <Image
                       src={photo.thumbnailUrl}
                       alt={photo.title}
+                      width={300}
+                      height={200}
                       className="h-32 w-full object-cover"
                     />
                     {photo.isPurchased && (
@@ -241,9 +244,11 @@ export default function OshiWipePage() {
                   onClick={() => handleSelectOshiPhoto(photo)}
                 >
                   <div className="relative">
-                    <img
+                    <Image
                       src={photo.thumbnailUrl}
                       alt={photo.title}
+                      width={150}
+                      height={150}
                       className="h-32 w-full object-cover"
                     />
                     <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 p-1">
@@ -279,9 +284,11 @@ export default function OshiWipePage() {
 
               {/* プレビュー */}
               <div className="mb-4 overflow-hidden rounded-lg border border-gray-200">
-                <img
+                <Image
                   src={previewUrl || selectedPhoto.url}
                   alt={selectedPhoto.title}
+                  width={800}
+                  height={600}
                   className="w-full object-contain"
                 />
               </div>

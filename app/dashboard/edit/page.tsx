@@ -78,8 +78,8 @@ export default function EditPage() {
         // 写真の取得（ハッカソンデモ用のモックデータ）
         const mockPhotos: Photo[] = Array.from({ length: 8 }, (_, i) => ({
           id: `photo-${i + 1}`,
-          url: `https://source.unsplash.com/random/800x600?sig=${i + 101}`,
-          thumbnailUrl: `https://source.unsplash.com/random/400x300?sig=${i + 101}`,
+          url: `https://picsum.photos/800/600?random=${i + 101}`,
+          thumbnailUrl: `https://picsum.photos/400/300?random=${i + 101}`,
           title: `写真 ${i + 1}`,
           eventName: i < 4 ? '保育園夏祭り 2023' : '運動会 2023',
           takenAt: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
@@ -274,9 +274,11 @@ export default function EditPage() {
 
               {/* プレビュー */}
               <div className="mb-4 overflow-hidden rounded-lg border border-gray-200">
-                <img
+                <Image
                   src={previewUrl || selectedPhoto.url}
                   alt={selectedPhoto.title}
+                  width={800}
+                  height={600}
                   className="w-full object-contain"
                 />
               </div>
@@ -295,9 +297,11 @@ export default function EditPage() {
                       }`}
                       onClick={() => handleSelectFrame(frame.id)}
                     >
-                      <img
+                      <Image
                         src={frame.thumbnailUrl}
                         alt={frame.name}
+                        width={64}
+                        height={64}
                         className="h-16 w-16 object-cover"
                       />
                       <p className="p-1 text-center text-xs">{frame.name}</p>
