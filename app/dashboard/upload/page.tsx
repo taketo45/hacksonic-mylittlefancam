@@ -131,11 +131,12 @@ export default function UploadPage() {
 
       <div className="rounded-lg border border-gray-200 bg-white p-6">
         <div className="mb-6">
-          <label className="mb-2 block text-sm font-medium text-gray-700">
+          <label htmlFor="folder-input" className="mb-2 block text-sm font-medium text-gray-700">
             フォルダを選択
           </label>
           <div className="mt-1 flex items-center">
             <input
+              id="folder-input"
               type="file"
               ref={fileInputRef}
               onChange={handleFolderSelect}
@@ -143,6 +144,8 @@ export default function UploadPage() {
               directory=""
               multiple
               className="hidden"
+              aria-label="フォルダを選択"
+              title="フォルダを選択"
             />
             <button
               type="button"

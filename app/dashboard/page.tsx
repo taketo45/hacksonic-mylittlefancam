@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Image from 'next/image'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 
 // ダッシュボードカードコンポーネント
 function DashboardCard({
@@ -45,8 +46,9 @@ function DashboardCard({
 
 export default function DashboardPage() {
   const [userName, setUserName] = useState<string | null>(null)
-  const [userRole, setUserRole] = useState<'organizer' | 'user'>('user')
+  const [userRole, setUserRole] = useState<'organizer' | 'user'>('organizer')
   const [isLoading, setIsLoading] = useState(true)
+  const router = useRouter()
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -59,14 +61,24 @@ export default function DashboardPage() {
         
         // ローカルストレージからユーザーロールを取得
         const storedRole = localStorage.getItem('userRole') as 'organizer' | 'user' | null
-        setUserRole(storedRole || 'user')
+        const role = storedRole || 'organizer'
+        setUserRole(role)
+        
+        // ロールに応じたデフォルトページにリダイレクト
+        if (role === 'organizer') {
+          // 主催者・撮影者の場合はイベント管理ページへ
+          router.prefetch('/dashboard/events')
+        } else {
+          // 一般ユーザーの場合は写真一覧ページへ
+          router.prefetch('/dashboard/photos')
+        }
       }
       
       setIsLoading(false)
     }
     
     fetchUserData()
-  }, [])
+  }, [router])
 
   if (isLoading) {
     return (
@@ -139,10 +151,32 @@ export default function DashboardPage() {
                 }
               />
               <DashboardCard
+                title="バッチ処理"
+                description="各種バッチ処理の実行と状態確認"
+                href="/dashboard/batch"
+                color="purple"
+                icon={
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-6 w-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
+                    />
+                  </svg>
+                }
+              />
+              <DashboardCard
                 title="印刷ステータス"
                 description="印刷注文の状況を確認します"
                 href="/dashboard/print"
-                color="purple"
+                color="orange"
                 icon={
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -187,6 +221,50 @@ export default function DashboardPage() {
                 }
               />
               <DashboardCard
+                title="写真編集"
+                description="写真にフレームを追加したり、SNS用に顔をマスキングしたりできます"
+                href="/dashboard/edit"
+                color="green"
+                icon={
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-6 w-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"
+                    />
+                  </svg>
+                }
+              />
+              <DashboardCard
+                title="推しワイプ編集"
+                description="あなたの写真に推しの写真をワイプとして追加できます"
+                href="/dashboard/oshi-wipe"
+                color="purple"
+                icon={
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-6 w-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"
+                    />
+                  </svg>
+                }
+              />
+              <DashboardCard
                 title="カート"
                 description="選択した写真を購入します"
                 href="/dashboard/cart"
@@ -212,7 +290,7 @@ export default function DashboardPage() {
                 title="購入履歴"
                 description="過去の購入履歴を確認します"
                 href="/dashboard/purchases"
-                color="green"
+                color="blue"
                 icon={
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
