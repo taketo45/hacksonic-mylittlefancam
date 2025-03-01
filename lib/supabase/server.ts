@@ -15,7 +15,41 @@ export function createClient() {
         getSession: () => Promise.resolve({ data: { session: null }, error: null }),
         getUser: () => Promise.resolve({ data: { user: null }, error: null }),
       },
-      // 他の必要なメソッドをダミー実装
+      // データベース操作用のメソッドをダミー実装
+      from: () => ({
+        select: () => ({
+          eq: () => ({
+            single: () => Promise.resolve({ data: null, error: null }),
+            maybeSingle: () => Promise.resolve({ data: null, error: null }),
+            order: () => ({
+              limit: () => Promise.resolve({ data: [], error: null })
+            }),
+            limit: () => Promise.resolve({ data: [], error: null }),
+          }),
+          order: () => ({
+            limit: () => Promise.resolve({ data: [], error: null })
+          }),
+          limit: () => Promise.resolve({ data: [], error: null }),
+        }),
+        insert: () => Promise.resolve({ data: null, error: null }),
+        update: () => ({
+          eq: () => Promise.resolve({ data: null, error: null }),
+          match: () => Promise.resolve({ data: null, error: null }),
+        }),
+        delete: () => ({
+          eq: () => Promise.resolve({ data: null, error: null }),
+          match: () => Promise.resolve({ data: null, error: null }),
+        }),
+      }),
+      storage: {
+        from: () => ({
+          upload: () => Promise.resolve({ data: null, error: null }),
+          getPublicUrl: () => ({ data: { publicUrl: '' } }),
+          list: () => Promise.resolve({ data: [], error: null }),
+          remove: () => Promise.resolve({ data: null, error: null }),
+        }),
+      },
+      rpc: () => Promise.resolve({ data: null, error: null }),
     }
   }
   
