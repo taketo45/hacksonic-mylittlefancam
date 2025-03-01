@@ -1,10 +1,12 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useAtom } from 'jotai'
 import { createClient } from '@/lib/supabase/client'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { userRoleAtom } from '@/lib/atoms/userRole'
 
 // ダッシュボードカードコンポーネント
 function DashboardCard({
@@ -46,7 +48,7 @@ function DashboardCard({
 
 export default function DashboardPage() {
   const [userName, setUserName] = useState<string | null>(null)
-  const [userRole, setUserRole] = useState<'organizer' | 'user'>('organizer')
+  const [userRole] = useAtom(userRoleAtom)
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
 
@@ -58,27 +60,13 @@ export default function DashboardPage() {
       
       if (user) {
         setUserName(user.email)
-        
-        // ローカルストレージからユーザーロールを取得
-        const storedRole = localStorage.getItem('userRole') as 'organizer' | 'user' | null
-        const role = storedRole || 'organizer'
-        setUserRole(role)
-        
-        // ロールに応じたデフォルトページにリダイレクト
-        if (role === 'organizer') {
-          // 主催者・撮影者の場合はイベント管理ページへ
-          router.prefetch('/dashboard/events')
-        } else {
-          // 一般ユーザーの場合は写真一覧ページへ
-          router.prefetch('/dashboard/photos')
-        }
       }
       
       setIsLoading(false)
     }
     
     fetchUserData()
-  }, [router])
+  }, [])
 
   if (isLoading) {
     return (

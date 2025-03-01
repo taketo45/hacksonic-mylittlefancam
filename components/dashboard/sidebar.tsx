@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useAtom } from 'jotai'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { userRoleAtom } from '@/lib/atoms/userRole'
 
 // 主催者・撮影者向けのメニュー項目
 const organizerMenuItems = [
@@ -194,19 +195,10 @@ const userMenuItems = [
 
 export default function DashboardSidebar() {
   const pathname = usePathname()
-  const [activeRole, setActiveRole] = useState<'organizer' | 'user'>('organizer')
-  const [menuItems, setMenuItems] = useState(organizerMenuItems)
-
-  // クライアントサイドでのみ実行
-  useEffect(() => {
-    // ローカルストレージからユーザーロールを取得
-    const storedRole = localStorage.getItem('userRole') as 'organizer' | 'user' | null
-    const role = storedRole || 'organizer'
-    setActiveRole(role)
-    
-    // ロールに応じてメニュー項目を設定
-    setMenuItems(role === 'organizer' ? organizerMenuItems : userMenuItems)
-  }, [])
+  const [userRole] = useAtom(userRoleAtom)
+  
+  // ユーザーロールに応じたメニュー項目を選択
+  const menuItems = userRole === 'organizer' ? organizerMenuItems : userMenuItems
 
   return (
     <aside className="w-64 border-r bg-white">

@@ -1,24 +1,33 @@
 'use client'
 
-import { useState } from 'react'
+import { useAtom } from 'jotai'
 import Link from 'next/link'
 import Image from 'next/image'
+import { useRouter } from 'next/navigation'
 import LogoutButton from '@/components/logout-button'
 import { User } from '@supabase/supabase-js'
+import { userRoleAtom, getDefaultPageForRole } from '@/lib/atoms/userRole'
 
 interface DashboardHeaderProps {
   user: User | null
 }
 
 export default function DashboardHeader({ user }: DashboardHeaderProps) {
-  const [activeRole, setActiveRole] = useState<'organizer' | 'user'>('organizer')
+  const [activeRole, setActiveRole] = useAtom(userRoleAtom)
+  const router = useRouter()
 
   const handleRoleChange = (role: 'organizer' | 'user') => {
+    // すでに選択されているロールの場合は何もしない
+    if (role === activeRole) return
+
+    // 状態を更新（Jotaiのatomが自動的にローカルストレージに保存する）
     setActiveRole(role)
-    // ローカルストレージに保存して、ページ遷移後も維持できるようにする
-    localStorage.setItem('userRole', role)
-    // ページをリロードして、サイドバーを更新
-    window.location.reload()
+    
+    // ロールに応じたデフォルトページにリダイレクト
+    const targetPath = getDefaultPageForRole(role)
+    
+    // ページ遷移（リロードではなく、クライアントサイドナビゲーション）
+    router.push(targetPath)
   }
 
   return (
