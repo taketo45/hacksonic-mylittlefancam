@@ -17,6 +17,9 @@ interface Event {
   organizer_id: string
 }
 
+// 動的レンダリングに設定
+export const dynamic = 'force-dynamic'
+
 export default function EventDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter()
   const { id } = params
@@ -53,32 +56,32 @@ export default function EventDetailPage({ params }: { params: { id: string } }) 
         }
         
         // イベントデータを取得
-        const { data, error: fetchError } = await supabase
+        const response = await supabase
           .from('events')
           .select('*')
           .eq('id', id)
           .single()
         
-        if (fetchError) {
-          throw fetchError
+        if (response.error) {
+          throw response.error
         }
         
-        if (!data) {
+        if (!response.data) {
           throw new Error('イベントが見つかりませんでした')
         }
         
         // 自分が作成したイベントかチェック
-        if (data.organizer_id !== user.id) {
+        if (response.data.organizer_id !== user.id) {
           throw new Error('このイベントを閲覧する権限がありません')
         }
         
-        setEvent(data)
+        setEvent(response.data)
         setFormData({
-          title: data.title,
-          description: data.description || '',
-          date: data.date,
-          location: data.location,
-          status: data.status,
+          title: response.data.title,
+          description: response.data.description || '',
+          date: response.data.date,
+          location: response.data.location,
+          status: response.data.status,
         })
       } catch (err) {
         console.error('イベント取得エラー:', err)
@@ -123,7 +126,7 @@ export default function EventDetailPage({ params }: { params: { id: string } }) 
       const supabase = createClient()
       
       // イベントデータを更新
-      const { data, error: updateError } = await supabase
+      const response = await supabase
         .from('events')
         .update({
           title: formData.title,
@@ -135,13 +138,13 @@ export default function EventDetailPage({ params }: { params: { id: string } }) 
         .eq('id', id)
         .select()
       
-      if (updateError) {
-        throw updateError
+      if (response.error) {
+        throw response.error
       }
       
       // 更新されたイベントデータを設定
-      if (data && data[0]) {
-        setEvent(data[0])
+      if (response.data && response.data[0]) {
+        setEvent(response.data[0])
       }
       
       // 編集モードを終了
@@ -167,13 +170,13 @@ export default function EventDetailPage({ params }: { params: { id: string } }) 
       const supabase = createClient()
       
       // イベントデータを削除
-      const { error: deleteError } = await supabase
+      const response = await supabase
         .from('events')
         .delete()
         .eq('id', id)
       
-      if (deleteError) {
-        throw deleteError
+      if (response.error) {
+        throw response.error
       }
       
       // 成功したらイベント一覧ページにリダイレクト

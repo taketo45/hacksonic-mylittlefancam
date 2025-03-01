@@ -1,8 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
+import { createClient } from '@/lib/supabase/client'
 
 // イベントの型定義
 interface Event {
@@ -41,17 +41,17 @@ export default function EventsPage() {
         }
         
         // ユーザーが作成したイベントを取得
-        const { data, error } = await supabase
+        const response = await supabase
           .from('events')
           .select('*')
           .eq('organizer_id', user.id)
           .order('date', { ascending: false })
         
-        if (error) {
-          throw error
+        if (response.error) {
+          throw response.error
         }
         
-        setEvents(data || [])
+        setEvents(response.data || [])
       } catch (err) {
         console.error('イベント取得エラー:', err)
         setError('イベントの取得中にエラーが発生しました')
