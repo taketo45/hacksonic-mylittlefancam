@@ -15,6 +15,9 @@ interface Event {
   status: 'active' | 'completed' | 'cancelled'
 }
 
+// 動的レンダリングに設定
+export const dynamic = 'force-dynamic'
+
 export default function EventsPage() {
   const [events, setEvents] = useState<Event[]>([])
   const [isLoading, setIsLoading] = useState(true)

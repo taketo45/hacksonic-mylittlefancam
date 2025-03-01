@@ -20,34 +20,22 @@ export function createClient() {
         // 共通のダミーレスポンス生成関数
         const dummyResponse = (data = null) => Promise.resolve({ data, error: null });
         
-        // 共通のメソッドチェーン用オブジェクト
-        const createFilterBuilder = () => ({
-          single: () => dummyResponse(null),
-          maybeSingle: () => dummyResponse(null),
-          limit: () => dummyResponse([]),
-          order: () => ({
-            limit: () => dummyResponse([])
-          }),
-        });
-        
         return {
-          select: () => {
-            return {
-              eq: () => createFilterBuilder(),
+          select: () => ({
+            eq: () => dummyResponse([]),
+            order: () => ({
+              limit: () => dummyResponse([])
+            }),
+            limit: () => dummyResponse([]),
+            in: () => ({
               order: () => ({
                 limit: () => dummyResponse([])
               }),
-              limit: () => dummyResponse([]),
-              in: () => ({
-                order: () => ({
-                  limit: () => dummyResponse([])
-                }),
-                limit: () => dummyResponse([])
-              }),
-              single: () => dummyResponse(null),
-              maybeSingle: () => dummyResponse(null),
-            }
-          },
+              limit: () => dummyResponse([])
+            }),
+            single: () => dummyResponse(null),
+            maybeSingle: () => dummyResponse(null),
+          }),
           insert: (data) => ({
             select: () => dummyResponse(data),
             returning: () => dummyResponse(data),

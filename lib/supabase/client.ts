@@ -6,76 +6,74 @@ export function createClient() {
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
   
   // ビルド時のみの処理（静的生成時）
-  if (process.env.NODE_ENV === 'production' && process.env.CI) {
+  if (typeof window === 'undefined' && process.env.NODE_ENV === 'production' && process.env.CI) {
     // CIビルド時は実際のクライアント作成をスキップ
     // @ts-ignore - ビルド時のみのダミー実装
     return {
       auth: {
         getSession: () => Promise.resolve({ data: { session: null }, error: null }),
         getUser: () => Promise.resolve({ data: { user: null }, error: null }),
-        signInWithPassword: () => Promise.resolve({ data: null, error: null }),
-        signUp: () => Promise.resolve({ data: null, error: null }),
         signOut: () => Promise.resolve({ error: null }),
+        signInWithOAuth: () => Promise.resolve({ error: null }),
+        onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
       },
       // データベース操作用のメソッドをダミー実装
       from: (table) => {
         // 共通のダミーレスポンス生成関数
         const dummyResponse = (data = null) => Promise.resolve({ data, error: null });
         
-        // 共通のメソッドチェーン用オブジェクト
-        const createFilterBuilder = () => ({
-          single: () => dummyResponse(null),
-          maybeSingle: () => dummyResponse(null),
-          limit: () => dummyResponse([]),
-          order: () => ({
-            limit: () => dummyResponse([])
-          }),
-        });
-        
         return {
-          select: () => {
-            return {
-              eq: () => createFilterBuilder(),
-              order: () => ({
-                limit: () => dummyResponse([])
-              }),
-              limit: () => dummyResponse([]),
-              in: () => ({
-                order: () => ({
-                  limit: () => dummyResponse([])
-                }),
-                limit: () => dummyResponse([])
-              }),
+          select: (columns = '*') => ({
+            eq: (column, value) => ({
               single: () => dummyResponse(null),
               maybeSingle: () => dummyResponse(null),
-            }
-          },
+              limit: (limit) => dummyResponse([]),
+              order: (column, options) => ({
+                limit: (limit) => dummyResponse([])
+              }),
+              data: [],
+              error: null,
+              then: (callback) => Promise.resolve({ data: [], error: null }).then(callback)
+            }),
+            order: (column, options) => ({
+              limit: (limit) => dummyResponse([])
+            }),
+            limit: (limit) => dummyResponse([]),
+            in: (column, values) => ({
+              order: (column, options) => ({
+                limit: (limit) => dummyResponse([])
+              }),
+              limit: (limit) => dummyResponse([])
+            }),
+            single: () => dummyResponse(null),
+            maybeSingle: () => dummyResponse(null),
+          }),
           insert: (data) => ({
-            select: () => dummyResponse(data),
-            returning: () => dummyResponse(data),
+            select: (columns = '*') => dummyResponse(data),
+            returning: (columns = '*') => dummyResponse(data),
           }),
           update: (data) => ({
-            eq: () => ({
-              select: () => dummyResponse(data),
-              match: () => dummyResponse(data),
+            eq: (column, value) => ({
+              select: (columns = '*') => dummyResponse(data),
+              match: (query) => dummyResponse(data),
             }),
-            match: () => dummyResponse(data),
+            match: (query) => dummyResponse(data),
           }),
           delete: () => ({
-            eq: () => dummyResponse(null),
-            match: () => dummyResponse(null),
+            eq: (column, value) => dummyResponse(null),
+            match: (query) => dummyResponse(null),
           }),
         }
       },
       storage: {
         from: (bucket) => ({
-          upload: () => Promise.resolve({ data: { path: `${bucket}/dummy-path` }, error: null }),
-          getPublicUrl: () => ({ data: { publicUrl: `https://dummy-url.com/${bucket}/dummy-file` } }),
-          list: () => Promise.resolve({ data: [], error: null }),
-          remove: () => Promise.resolve({ data: null, error: null }),
+          upload: (path, file) => Promise.resolve({ data: { path: `${bucket}/${path}` }, error: null }),
+          getPublicUrl: (path) => ({ data: { publicUrl: `https://dummy-url.com/${bucket}/${path}` } }),
+          list: (prefix) => Promise.resolve({ data: [], error: null }),
+          remove: (paths) => Promise.resolve({ data: null, error: null }),
         }),
       },
-      rpc: () => Promise.resolve({ data: null, error: null }),
+      rpc: (fn, params) => Promise.resolve({ data: null, error: null }),
     }
   }
   
