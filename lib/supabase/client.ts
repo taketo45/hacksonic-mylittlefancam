@@ -15,65 +15,81 @@ export function createClient() {
         getUser: () => Promise.resolve({ data: { user: null }, error: null }),
         signOut: () => Promise.resolve({ error: null }),
         signInWithOAuth: () => Promise.resolve({ error: null }),
+        // @ts-ignore - ビルド時のみのダミー実装
+        signInWithPassword: (credentials: { email: string; password: string }) => 
+          Promise.resolve({ data: { user: null, session: null }, error: null }),
+        // @ts-ignore - ビルド時のみのダミー実装
+        signUp: (credentials: { email: string; password: string; options?: any }) => 
+          Promise.resolve({ data: { user: null, session: null }, error: null }),
         onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
       },
       // データベース操作用のメソッドをダミー実装
-      from: (table) => {
+      from: (table: string) => {
         // 共通のダミーレスポンス生成関数
-        const dummyResponse = (data = null) => Promise.resolve({ data, error: null });
+        const dummyResponse = <T>(data: T | null = null) => Promise.resolve({ data, error: null });
+        // 配列を返すダミーレスポンス
+        const dummyArrayResponse = () => Promise.resolve({ 
+          data: [{ id: 'dummy-id', created_at: new Date().toISOString() }], 
+          error: null 
+        });
         
         return {
           select: (columns = '*') => ({
-            eq: (column, value) => ({
-              single: () => dummyResponse(null),
-              maybeSingle: () => dummyResponse(null),
-              limit: (limit) => dummyResponse([]),
-              order: (column, options) => ({
-                limit: (limit) => dummyResponse([])
+            eq: (column: string, value: unknown) => ({
+              single: () => dummyResponse({ id: 'dummy-id', created_at: new Date().toISOString() }),
+              maybeSingle: () => dummyResponse({ id: 'dummy-id', created_at: new Date().toISOString() }),
+              limit: (limit: number) => dummyArrayResponse(),
+              order: (column: string, options: unknown) => ({
+                limit: (limit: number) => dummyArrayResponse()
               }),
-              data: [],
+              data: [{ id: 'dummy-id', created_at: new Date().toISOString() }],
               error: null,
-              then: (callback) => Promise.resolve({ data: [], error: null }).then(callback)
+              then: (callback: (result: { data: unknown[]; error: null }) => unknown) => 
+                Promise.resolve({ 
+                  data: [{ id: 'dummy-id', created_at: new Date().toISOString() }], 
+                  error: null 
+                }).then(callback)
             }),
-            order: (column, options) => ({
-              limit: (limit) => dummyResponse([])
+            order: (column: string, options: unknown) => ({
+              limit: (limit: number) => dummyArrayResponse()
             }),
-            limit: (limit) => dummyResponse([]),
-            in: (column, values) => ({
-              order: (column, options) => ({
-                limit: (limit) => dummyResponse([])
+            limit: (limit: number) => dummyArrayResponse(),
+            in: (column: string, values: unknown[]) => ({
+              order: (column: string, options: unknown) => ({
+                limit: (limit: number) => dummyArrayResponse()
               }),
-              limit: (limit) => dummyResponse([])
+              limit: (limit: number) => dummyArrayResponse()
             }),
-            single: () => dummyResponse(null),
-            maybeSingle: () => dummyResponse(null),
+            single: () => dummyResponse({ id: 'dummy-id', created_at: new Date().toISOString() }),
+            maybeSingle: () => dummyResponse({ id: 'dummy-id', created_at: new Date().toISOString() }),
           }),
-          insert: (data) => ({
-            select: (columns = '*') => dummyResponse(data),
-            returning: (columns = '*') => dummyResponse(data),
+          insert: (data: unknown) => ({
+            select: (columns = '*') => dummyArrayResponse(),
+            returning: (columns = '*') => dummyArrayResponse(),
           }),
-          update: (data) => ({
-            eq: (column, value) => ({
-              select: (columns = '*') => dummyResponse(data),
-              match: (query) => dummyResponse(data),
+          update: (data: unknown) => ({
+            eq: (column: string, value: unknown) => ({
+              select: (columns = '*') => dummyArrayResponse(),
+              match: (query: unknown) => dummyArrayResponse(),
             }),
-            match: (query) => dummyResponse(data),
+            match: (query: unknown) => dummyArrayResponse(),
           }),
           delete: () => ({
-            eq: (column, value) => dummyResponse(null),
-            match: (query) => dummyResponse(null),
+            eq: (column: string, value: unknown) => dummyResponse(null),
+            match: (query: unknown) => dummyResponse(null),
           }),
         }
       },
       storage: {
-        from: (bucket) => ({
-          upload: (path, file) => Promise.resolve({ data: { path: `${bucket}/${path}` }, error: null }),
-          getPublicUrl: (path) => ({ data: { publicUrl: `https://dummy-url.com/${bucket}/${path}` } }),
-          list: (prefix) => Promise.resolve({ data: [], error: null }),
-          remove: (paths) => Promise.resolve({ data: null, error: null }),
+        from: (bucket: string) => ({
+          upload: (path: string, file: unknown, options?: unknown) => 
+            Promise.resolve({ data: { path: `${bucket}/${path}` }, error: null }),
+          getPublicUrl: (path: string) => ({ data: { publicUrl: `https://dummy-url.com/${bucket}/${path}` } }),
+          list: (prefix: string) => Promise.resolve({ data: [], error: null }),
+          remove: (paths: string[]) => Promise.resolve({ data: null, error: null }),
         }),
       },
-      rpc: (fn, params) => Promise.resolve({ data: null, error: null }),
+      rpc: (fn: string, params?: unknown) => Promise.resolve({ data: null, error: null }),
     }
   }
   

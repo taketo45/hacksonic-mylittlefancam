@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
+import Image from 'next/image'
 
 // 写真の型定義
 interface Photo {
@@ -217,9 +218,11 @@ export default function EditPage() {
                   onClick={() => handleSelectPhoto(photo)}
                 >
                   <div className="relative">
-                    <img
+                    <Image
                       src={photo.thumbnailUrl}
                       alt={photo.title}
+                      width={300}
+                      height={200}
                       className="h-32 w-full object-cover"
                     />
                     {photo.isPurchased && (

@@ -3,6 +3,15 @@ const nextConfig = {
   // 画像の最適化に関する警告を抑制
   images: {
     unoptimized: process.env.CI === 'true',
+    domains: [
+      'source.unsplash.com',
+      'images.unsplash.com',
+      'plus.unsplash.com',
+      'placehold.co',
+      'placekitten.com',
+      'picsum.photos',
+      'via.placeholder.com'
+    ], // 複数の画像ドメインを許可リストに追加
   },
   // 環境変数が存在しない場合のフォールバック値を設定
   env: {

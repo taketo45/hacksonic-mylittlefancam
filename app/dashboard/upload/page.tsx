@@ -1,7 +1,16 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
+import { Progress } from '@/components/ui/progress'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
+import { PostgrestResponse } from '@supabase/supabase-js'
+
+// 動的レンダリングに設定
+export const dynamic = 'force-dynamic'
 
 // TypeScriptの型定義を拡張
 declare module 'react' {
@@ -13,206 +22,265 @@ declare module 'react' {
 }
 
 export default function UploadPage() {
-  const [selectedFolder, setSelectedFolder] = useState<string | null>(null)
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const eventId = searchParams.get('eventId')
+  
   const [files, setFiles] = useState<File[]>([])
-  const [uploading, setUploading] = useState(false)
-  const [progress, setProgress] = useState(0)
-  const [error, setError] = useState<string | null>(null)
-  const [success, setSuccess] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState<number[]>([])
+  const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'success' | 'error'>('idle')
+  const [errorMessage, setErrorMessage] = useState<string>('')
+  const [user, setUser] = useState<any>(null)
+  
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  const handleFolderSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const fileList = e.target.files
-    if (!fileList) return
-
-    // フォルダ名を取得（最初のファイルのパスから抽出）
-    if (fileList.length > 0 && fileList[0].webkitRelativePath) {
-      const folderPath = fileList[0].webkitRelativePath.split('/')[0]
-      setSelectedFolder(folderPath)
-    }
-
-    // 画像ファイルのみをフィルタリング
-    const imageFiles: File[] = []
-    for (let i = 0; i < fileList.length; i++) {
-      const file = fileList[i]
-      if (file.type.startsWith('image/')) {
-        imageFiles.push(file)
+  useEffect(() => {
+    const checkAuth = async () => {
+      const supabase = createClient()
+      const { data } = await supabase.auth.getUser()
+      
+      if (!data.user) {
+        router.push('/login')
+        return
       }
+      
+      setUser(data.user)
     }
+    
+    checkAuth()
+  }, [router])
 
-    setFiles(imageFiles)
-    setError(null)
-    setSuccess(false)
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const selectedFiles = Array.from(e.target.files)
+      setFiles(selectedFiles)
+      setUploadProgress(new Array(selectedFiles.length).fill(0))
+      setUploadStatus('idle')
+      setErrorMessage('')
+    }
   }
 
-  const uploadFiles = async () => {
-    if (files.length === 0) {
-      setError('アップロードするファイルがありません')
-      return
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const droppedFiles = Array.from(e.dataTransfer.files)
+      setFiles(droppedFiles)
+      setUploadProgress(new Array(droppedFiles.length).fill(0))
+      setUploadStatus('idle')
+      setErrorMessage('')
     }
+  }
 
-    setUploading(true)
-    setProgress(0)
-    setError(null)
-    setSuccess(false)
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+  }
 
+  const uploadFile = async (file: File, index: number) => {
     try {
       const supabase = createClient()
-      const totalFiles = files.length
-      let uploadedFiles = 0
-
-      for (const file of files) {
-        const fileExt = file.name.split('.').pop()
-        const fileName = `${Math.random().toString(36).substring(2, 15)}.${fileExt}`
-        const filePath = `photos/${fileName}`
-
-        const { error: uploadError } = await supabase.storage
-          .from('photos')
-          .upload(filePath, file)
-
-        if (uploadError) {
-          throw uploadError
-        }
-
-        // Exif情報の取得（実際のExif情報取得はクライアントサイドでは制限があるため、簡易的な実装）
-        const exifData = {
-          dateTime: new Date().toISOString(),
-          make: 'Unknown',
-          model: 'Unknown',
-          exposureTime: 'Unknown',
-          fNumber: 'Unknown',
-          iso: 'Unknown',
-        }
-
-        // OriginalPhotoTBLにデータを保存
-        const { error: dbError } = await supabase.from('original_photos').insert([
-          {
-            storage_url: filePath,
-            file_name: file.name,
-            file_size: file.size,
-            mime_type: file.type,
-            exif_date_time: exifData.dateTime,
-            exif_make: exifData.make,
-            exif_model: exifData.model,
-            exif_exposure_time: exifData.exposureTime,
-            exif_f_number: exifData.fNumber,
-            exif_iso: exifData.iso,
-          },
-        ])
-
-        if (dbError) {
-          throw dbError
-        }
-
-        uploadedFiles++
-        setProgress(Math.round((uploadedFiles / totalFiles) * 100))
+      
+      // ファイル名を一意にするためにタイムスタンプを追加
+      const timestamp = new Date().getTime()
+      const fileExt = file.name.split('.').pop()
+      const fileName = `${timestamp}-${file.name}`
+      const filePath = `${eventId}/${fileName}`
+      
+      // アップロード開始時に進捗を設定
+      const newProgress = [...uploadProgress]
+      newProgress[index] = 10 // アップロード開始を示す初期値
+      setUploadProgress(newProgress)
+      
+      // Storageにアップロード
+      const uploadResponse = await supabase.storage
+        .from('photos')
+        .upload(filePath, file, {
+          cacheControl: '3600',
+          upsert: false,
+        })
+      
+      // アップロード完了時に進捗を100%に設定
+      const completedProgress = [...uploadProgress]
+      completedProgress[index] = 100
+      setUploadProgress(completedProgress)
+      
+      // 型ガードを追加して安全にアクセス
+      if ('error' in uploadResponse && uploadResponse.error) {
+        console.error('アップロードエラー:', uploadResponse.error)
+        setUploadStatus('error')
+        setErrorMessage('写真のアップロードに失敗しました')
+        return false
       }
-
-      setSuccess(true)
-    } catch (err) {
-      console.error('アップロードエラー:', err)
-      setError('ファイルのアップロード中にエラーが発生しました')
-    } finally {
-      setUploading(false)
+      
+      // OriginalPhotoTBLにデータを保存
+      const response = await supabase.from('original_photos').insert([
+        {
+          storage_url: filePath,
+          file_name: file.name,
+          event_id: eventId,
+          photographer_id: user.id,
+          upload_date: new Date().toISOString(),
+          status: 'uploaded',
+          metadata: JSON.stringify({
+            size: file.size,
+            type: file.type,
+            lastModified: file.lastModified,
+          }),
+        },
+      ])
+      
+      // 型ガードを追加して安全にアクセス
+      if ('error' in response && response.error) {
+        console.error('データベース保存エラー:', response.error)
+        setUploadStatus('error')
+        setErrorMessage('写真のメタデータの保存に失敗しました')
+        return false
+      }
+      
+      return true
+    } catch (error) {
+      console.error('アップロード処理エラー:', error)
+      setUploadStatus('error')
+      setErrorMessage('写真のアップロード中にエラーが発生しました')
+      return false
     }
+  }
+
+  const handleUpload = async () => {
+    if (files.length === 0) return
+    
+    setUploadStatus('uploading')
+    setErrorMessage('')
+    
+    let success = true
+    
+    for (let i = 0; i < files.length; i++) {
+      const result = await uploadFile(files[i], i)
+      if (!result) {
+        success = false
+        break
+      }
+    }
+    
+    if (success) {
+      setUploadStatus('success')
+    }
+  }
+
+  const handleBrowseClick = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click()
+    }
+  }
+
+  const handleBackToEvent = () => {
+    router.push(`/dashboard/events/${eventId}`)
   }
 
   return (
     <div className="p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">写真アップロード</h1>
-        <p className="mt-1 text-gray-600">
-          イベントの写真をアップロードします。フォルダを選択すると、そのフォルダ内の全ての写真がアップロードされます。
-        </p>
-      </div>
-
-      {error && (
-        <div className="mb-6 rounded-lg bg-red-50 p-4 text-red-800">
-          <p>{error}</p>
-        </div>
-      )}
-
-      {success && (
-        <div className="mb-6 rounded-lg bg-green-50 p-4 text-green-800">
-          <p>全てのファイルが正常にアップロードされました！</p>
-        </div>
-      )}
-
-      <div className="rounded-lg border border-gray-200 bg-white p-6">
-        <div className="mb-6">
-          <label htmlFor="folder-input" className="mb-2 block text-sm font-medium text-gray-700">
-            フォルダを選択
-          </label>
-          <div className="mt-1 flex items-center">
+      <Card className="w-full max-w-3xl mx-auto">
+        <CardHeader>
+          <CardTitle>写真アップロード</CardTitle>
+          <CardDescription>
+            イベントの写真をアップロードします。複数の写真を一度に選択できます。
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {uploadStatus === 'error' && (
+            <Alert variant="destructive" className="mb-4">
+              <AlertTitle>エラーが発生しました</AlertTitle>
+              <AlertDescription>{errorMessage}</AlertDescription>
+            </Alert>
+          )}
+          
+          {uploadStatus === 'success' && (
+            <Alert className="mb-4 bg-green-50 border-green-200">
+              <AlertTitle>アップロード完了</AlertTitle>
+              <AlertDescription>すべての写真のアップロードが完了しました。</AlertDescription>
+            </Alert>
+          )}
+          
+          <div
+            className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:bg-gray-50 transition-colors"
+            onClick={handleBrowseClick}
+            onDrop={handleDrop}
+            onDragOver={handleDragOver}
+          >
             <input
-              id="folder-input"
               type="file"
               ref={fileInputRef}
-              onChange={handleFolderSelect}
-              webkitdirectory=""
-              directory=""
+              onChange={handleFileChange}
               multiple
+              accept="image/*"
               className="hidden"
-              aria-label="フォルダを選択"
-              title="フォルダを選択"
+              aria-label="写真ファイル選択"
             />
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-milab-500 focus:ring-offset-2"
-            >
-              フォルダを選択
-            </button>
-            {selectedFolder && (
-              <span className="ml-3 text-sm text-gray-500">
-                選択されたフォルダ: {selectedFolder}
-              </span>
-            )}
+            <div className="flex flex-col items-center justify-center">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-12 w-12 text-gray-400 mb-3"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                />
+              </svg>
+              <p className="text-lg font-medium text-gray-700">
+                ここに写真をドラッグ&ドロップ
+              </p>
+              <p className="text-sm text-gray-500 mt-1">または</p>
+              <Button
+                variant="outline"
+                className="mt-2"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleBrowseClick()
+                }}
+              >
+                写真を選択
+              </Button>
+            </div>
           </div>
-        </div>
-
-        {files.length > 0 && (
-          <div className="mb-6">
-            <h3 className="mb-2 text-sm font-medium text-gray-700">
-              選択された写真: {files.length}枚
-            </h3>
-            <div className="max-h-60 overflow-y-auto rounded-md border border-gray-200 p-2">
-              <ul className="space-y-1">
+          
+          {files.length > 0 && (
+            <div className="mt-6">
+              <h3 className="text-sm font-medium text-gray-700 mb-2">
+                選択された写真 ({files.length}枚)
+              </h3>
+              <div className="space-y-3">
                 {files.map((file, index) => (
-                  <li key={index} className="text-sm text-gray-600">
-                    {file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)
-                  </li>
+                  <div key={index} className="flex items-center">
+                    <div className="flex-1">
+                      <p className="text-sm text-gray-700 truncate">{file.name}</p>
+                      <Progress value={uploadProgress[index]} className="h-2 mt-1" />
+                    </div>
+                    <span className="ml-2 text-xs text-gray-500">
+                      {uploadProgress[index]}%
+                    </span>
+                  </div>
                 ))}
-              </ul>
+              </div>
             </div>
-          </div>
-        )}
-
-        {uploading && (
-          <div className="mb-6">
-            <h3 className="mb-2 text-sm font-medium text-gray-700">
-              アップロード進捗: {progress}%
-            </h3>
-            <div className="h-2 w-full rounded-full bg-gray-200">
-              <div
-                className="h-2 rounded-full bg-milab-600"
-                style={{ width: `${progress}%` }}
-              ></div>
-            </div>
-          </div>
-        )}
-
-        <div className="flex justify-end">
-          <button
-            type="button"
-            onClick={uploadFiles}
-            disabled={files.length === 0 || uploading}
-            className="rounded-md bg-milab-600 px-4 py-2 text-sm font-medium text-white hover:bg-milab-700 focus:outline-none focus:ring-2 focus:ring-milab-500 focus:ring-offset-2 disabled:opacity-50"
+          )}
+        </CardContent>
+        <CardFooter className="flex justify-between">
+          <Button variant="outline" onClick={handleBackToEvent}>
+            イベントに戻る
+          </Button>
+          <Button
+            onClick={handleUpload}
+            disabled={files.length === 0 || uploadStatus === 'uploading'}
           >
-            {uploading ? 'アップロード中...' : 'アップロード開始'}
-          </button>
-        </div>
-      </div>
+            {uploadStatus === 'uploading' ? 'アップロード中...' : 'アップロード開始'}
+          </Button>
+        </CardFooter>
+      </Card>
     </div>
   )
 } 

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
+import Image from 'next/image'
 
 // 写真の型定義
 interface Photo {
@@ -177,9 +178,11 @@ export default function PhotosPage() {
                 className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow transition-all hover:shadow-md"
               >
                 <div className="relative">
-                  <img
+                  <Image
                     src={photo.thumbnailUrl}
                     alt={photo.title}
+                    width={400}
+                    height={300}
                     className="h-48 w-full object-cover"
                   />
                   <div className="absolute top-2 left-2">
@@ -240,9 +243,11 @@ export default function PhotosPage() {
               className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow transition-all hover:shadow-md"
             >
               <div className="relative">
-                <img
+                <Image
                   src={photo.thumbnailUrl}
                   alt={photo.title}
+                  width={400}
+                  height={300}
                   className="h-48 w-full object-cover"
                 />
                 {photo.hasUserFace && (

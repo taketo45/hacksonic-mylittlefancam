@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
+import Image from 'next/image'
 
 // 写真の型定義
 interface CartItem {
@@ -178,9 +179,11 @@ export default function CartPage() {
                   <li key={item.id} className="p-4">
                     <div className="flex flex-col gap-4 sm:flex-row">
                       <div className="h-32 w-32 flex-shrink-0 overflow-hidden rounded-md">
-                        <img
+                        <Image
                           src={item.thumbnailUrl}
                           alt={item.title}
+                          width={128}
+                          height={128}
                           className="h-full w-full object-cover"
                         />
                       </div>
