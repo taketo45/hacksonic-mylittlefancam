@@ -39,7 +39,10 @@ export function createClient() {
             limit: () => Promise.resolve({ data: [], error: null }),
           }),
         }),
-        insert: () => Promise.resolve({ data: null, error: null }),
+        insert: () => ({
+          select: () => Promise.resolve({ data: null, error: null }),
+          returning: () => Promise.resolve({ data: null, error: null }),
+        }),
         update: () => ({
           eq: () => ({
             select: () => Promise.resolve({ data: null, error: null }),
