@@ -18,14 +18,7 @@ export function createClient() {
       // データベース操作用のメソッドをダミー実装
       from: () => ({
         select: () => ({
-          eq: () => ({
-            single: () => Promise.resolve({ data: null, error: null }),
-            maybeSingle: () => Promise.resolve({ data: null, error: null }),
-            order: () => ({
-              limit: () => Promise.resolve({ data: [], error: null })
-            }),
-            limit: () => Promise.resolve({ data: [], error: null }),
-          }),
+          eq: () => Promise.resolve({ data: [], error: null }),
           order: () => ({
             limit: () => Promise.resolve({ data: [], error: null })
           }),
@@ -36,6 +29,8 @@ export function createClient() {
             }),
             limit: () => Promise.resolve({ data: [], error: null }),
           }),
+          single: () => Promise.resolve({ data: null, error: null }),
+          maybeSingle: () => Promise.resolve({ data: null, error: null }),
         }),
         insert: () => ({
           select: () => Promise.resolve({ data: null, error: null }),
