@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { PostgrestResponse } from '@supabase/supabase-js'
 
 // イベントの型定義
 interface Event {
@@ -47,11 +48,17 @@ export default function EventsPage() {
           .eq('organizer_id', user.id)
           .order('date', { ascending: false })
         
-        if (response.error) {
+        // 型ガードを追加して安全にアクセス
+        if ('error' in response && response.error) {
           throw response.error
         }
         
-        setEvents(response.data || [])
+        // 型ガードを追加して安全にアクセス
+        if ('data' in response) {
+          setEvents(response.data || [])
+        } else {
+          setEvents([])
+        }
       } catch (err) {
         console.error('イベント取得エラー:', err)
         setError('イベントの取得中にエラーが発生しました')

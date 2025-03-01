@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
+import { PostgrestResponse } from '@supabase/supabase-js'
 
 // イベントの型定義
 interface Event {
@@ -62,11 +63,13 @@ export default function EventDetailPage({ params }: { params: { id: string } }) 
           .eq('id', id)
           .single()
         
-        if (response.error) {
+        // 型ガードを追加して安全にアクセス
+        if ('error' in response && response.error) {
           throw response.error
         }
         
-        if (!response.data) {
+        // 型ガードを追加して安全にアクセス
+        if (!('data' in response) || !response.data) {
           throw new Error('イベントが見つかりませんでした')
         }
         
@@ -138,12 +141,13 @@ export default function EventDetailPage({ params }: { params: { id: string } }) 
         .eq('id', id)
         .select()
       
-      if (response.error) {
+      // 型ガードを追加して安全にアクセス
+      if ('error' in response && response.error) {
         throw response.error
       }
       
-      // 更新されたイベントデータを設定
-      if (response.data && response.data[0]) {
+      // 型ガードを追加して安全にアクセス
+      if ('data' in response && response.data && response.data[0]) {
         setEvent(response.data[0])
       }
       
@@ -175,7 +179,8 @@ export default function EventDetailPage({ params }: { params: { id: string } }) 
         .delete()
         .eq('id', id)
       
-      if (response.error) {
+      // 型ガードを追加して安全にアクセス
+      if ('error' in response && response.error) {
         throw response.error
       }
       
