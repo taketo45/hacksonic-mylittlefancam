@@ -14,7 +14,9 @@ import {
   processedPhotoTbl, 
   cartTbl, 
   purchaseTbl, 
-  printManagementTbl 
+  printManagementTbl,
+  hostEventTbl,
+  userParticipationTbl
 } from './schema';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -29,7 +31,7 @@ export const organizationQueries = {
     organizationName: string;
     organizationAddress?: string;
     organizationContact?: string;
-    organizationType?: string;
+    organizationType?: '保育園' | '幼稚園' | '小学校' | '中学校' | '高校' | 'その他';
     department?: string;
   }) => {
     const organizationId = uuidv4();
@@ -86,7 +88,7 @@ export const hostQueries = {
     name: string;
     email: string;
     password: string;
-    accountStatus?: string;
+    accountStatus?: '有効' | '無効' | '停止中' | '審査中';
   }) => {
     const hostId = uuidv4();
     return await db.insert(hostTbl).values({
@@ -170,9 +172,9 @@ export const eventQueries = {
    * @returns 作成されたイベント
    */
   createEvent: async (data: {
-    eventName: string;
-    eventStatus?: string;
     hostId: string;
+    eventName: string;
+    eventStatus?: '準備中' | '公開中' | '終了' | 'キャンセル';
     eventRole?: string;
   }) => {
     const eventId = uuidv4();
@@ -249,12 +251,12 @@ export const eventQueries = {
   createEventSlot: async (data: {
     eventId: string;
     eventSlotName: string;
-    eventDate?: Date;
+    eventDate?: string;
     eventTime?: string;
     facilityId?: string;
     geoCode?: string;
     eventSlotDetail?: string;
-    eventSlotStatus?: string;
+    eventSlotStatus?: '準備中' | '公開中' | '終了' | 'キャンセル';
     ticketUrl?: string;
   }) => {
     const eventSlotId = uuidv4();
@@ -314,7 +316,7 @@ export const userQueries = {
     name: string;
     email: string;
     password: string;
-    accountStatus?: string;
+    accountStatus?: '有効' | '無効' | '停止中' | '審査中';
   }) => {
     const userId = uuidv4();
     return await db.insert(userTbl).values({
@@ -371,7 +373,7 @@ export const userQueries = {
     seatLineId?: string;
     seatRowId?: string;
   }) => {
-    return await db.insert(userTbl).values(data).returning();
+    return await db.insert(userParticipationTbl).values(data).returning();
   },
 };
 
@@ -614,7 +616,7 @@ export const purchaseQueries = {
     userId: string;
     processedPhotoId: string;
     processedPhotoUrl?: string;
-    status?: string;
+    status?: '準備中' | '印刷中' | '印刷完了' | '発送準備中' | '発送完了' | 'キャンセル' | 'エラー';
   }) => {
     return await db.insert(printManagementTbl).values(data).returning();
   },

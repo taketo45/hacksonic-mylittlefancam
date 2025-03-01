@@ -54,8 +54,34 @@ function Calendar({
         ...classNames,
       }}
       components={{
-        IconLeft: ({ ...props }) => <ChevronLeft className="h-4 w-4" />,
-        IconRight: ({ ...props }) => <ChevronRight className="h-4 w-4" />,
+        Chevron: ({ orientation }) => {
+          if (orientation === 'left') {
+            return (
+              <button
+                onClick={() => {}}
+                className={cn(
+                  buttonVariants({ variant: "outline" }),
+                  "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100"
+                )}
+                aria-label="前の月へ"
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+            )
+          }
+          return (
+            <button
+              onClick={() => {}}
+              className={cn(
+                buttonVariants({ variant: "outline" }),
+                "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100"
+              )}
+              aria-label="次の月へ"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          )
+        },
       }}
       {...props}
     />

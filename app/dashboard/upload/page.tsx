@@ -3,6 +3,15 @@
 import { useState, useRef } from 'react'
 import { createClient } from '@/lib/supabase/client'
 
+// TypeScriptの型定義を拡張
+declare module 'react' {
+  interface InputHTMLAttributes<T> extends HTMLAttributes<T> {
+    // ディレクトリ選択のための非標準属性
+    webkitdirectory?: string;
+    directory?: string;
+  }
+}
+
 export default function UploadPage() {
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null)
   const [files, setFiles] = useState<File[]>([])

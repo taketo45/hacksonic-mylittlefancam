@@ -106,7 +106,7 @@ export async function seedDatabase() {
       eventSlotId,
       eventId,
       eventSlotName: '午前の部',
-      eventDate: new Date('2023-04-15'),
+      eventDate: '2023-04-15',
       eventTime: '10:00:00',
       facilityId,
       eventSlotDetail: '午前中は公園で遊びます',

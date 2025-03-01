@@ -2,6 +2,7 @@ import { drizzle } from 'drizzle-orm/postgres-js';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import postgres from 'postgres';
 import * as schema from './schema';
+import { sql } from 'drizzle-orm';
 
 /**
  * データベースのマイグレーションを実行する関数
@@ -62,7 +63,7 @@ export async function testConnection() {
     console.log('データベース接続をテストしています...');
     
     // 簡単なクエリを実行してデータベース接続をテスト
-    const result = await testClient.query('SELECT NOW()');
+    const result = await testClient`SELECT NOW()`;
     
     console.log('データベース接続テスト成功:', result[0].now);
     return true;
