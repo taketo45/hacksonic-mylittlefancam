@@ -13,7 +13,7 @@ export default function Home() {
         <div className="container flex h-16 items-center justify-between px-4 md:px-6">
           <div className="flex items-center gap-2">
             <Image
-              src="/placeholder.svg?height=32&width=32"
+              src="/img/mylittlefancam.svg"
               width={32}
               height={32}
               alt="Logo"
@@ -76,7 +76,7 @@ export default function Home() {
               <div className="absolute inset-0 rounded-full bg-gradient-to-br from-milab-100/80 to-milab-200/80 blur-xl"></div>
               <div className="relative h-full w-full overflow-hidden rounded-full border-8 border-white shadow-xl">
                 <Image
-                  src="/placeholder.svg"
+                  src="/img/mylittlefancam.svg"
                   width={600}
                   height={600}
                   alt="子どもたちの笑顔"
@@ -86,7 +86,7 @@ export default function Home() {
               </div>
             </div>
           </div>
-          <div className="absolute inset-0 bg-[url('/placeholder.svg')] bg-repeat opacity-5"></div>
+          <div className="absolute inset-0 bg-[url('/img/mylittlefancam.svg')] bg-repeat opacity-5"></div>
         </section>
 
         {/* 特徴セクション */}
@@ -207,19 +207,19 @@ export default function Home() {
                 name="佐藤 美咲"
                 role="保護者"
                 content="運動会で忙しくて子どもの写真を撮れなかったのですが、他のお母さんが撮った素敵な写真を購入できて本当に嬉しかったです。思い出が増えました！"
-                avatar="/placeholder.svg"
+                avatar="/img/mylittlefancam.svg"
               />
               <TestimonialCard
                 name="田中 健太"
                 role="保護者"
                 content="子どもが活躍している瞬間を他の親御さんが撮ってくれていて、自分では絶対に撮れなかったアングルの写真が手に入りました。感謝しています。"
-                avatar="/placeholder.svg"
+                avatar="/img/mylittlefancam.svg"
               />
               <TestimonialCard
                 name="山田 先生"
                 role="幼稚園教諭"
                 content="保護者同士の交流が増え、イベントの写真も充実するようになりました。先生としても子どもたちの成長を記録できて嬉しいです。"
-                avatar="/placeholder.svg"
+                avatar="/img/mylittlefancam.svg"
               />
             </div>
           </div>
@@ -304,7 +304,7 @@ export default function Home() {
             <div>
               <div className="flex items-center gap-2">
                 <Image
-                  src="/placeholder.svg"
+                  src="/img/mylittlefancam.svg"
                   width={32}
                   height={32}
                   alt="Logo"
