@@ -59,7 +59,7 @@ export default function DashboardPage() {
       const { data: { user } } = await supabase.auth.getUser()
       
       if (user) {
-        setUserName(user.email)
+        setUserName(user.email || null)
       }
       
       setIsLoading(false)
