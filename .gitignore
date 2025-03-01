@@ -39,3 +39,6 @@ next-env.d.ts
 # Cursor 設定
 .cursorignore
 .cursorrules
+
+/docs/designImage/v0image
+/docs/mylittlefancam

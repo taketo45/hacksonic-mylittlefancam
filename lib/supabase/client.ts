@@ -32,10 +32,19 @@ export function createClient() {
             limit: () => Promise.resolve({ data: [], error: null })
           }),
           limit: () => Promise.resolve({ data: [], error: null }),
+          in: () => ({
+            order: () => ({
+              limit: () => Promise.resolve({ data: [], error: null })
+            }),
+            limit: () => Promise.resolve({ data: [], error: null }),
+          }),
         }),
         insert: () => Promise.resolve({ data: null, error: null }),
         update: () => ({
-          eq: () => Promise.resolve({ data: null, error: null }),
+          eq: () => ({
+            select: () => Promise.resolve({ data: null, error: null }),
+            match: () => Promise.resolve({ data: null, error: null }),
+          }),
           match: () => Promise.resolve({ data: null, error: null }),
         }),
         delete: () => ({
