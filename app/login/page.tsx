@@ -34,4 +34,7 @@ export default function LoginPage() {
       </div>
     </div>
   )
-} 
+}
+
+// このページを動的レンダリングに設定
+export const dynamic = 'force-dynamic' 

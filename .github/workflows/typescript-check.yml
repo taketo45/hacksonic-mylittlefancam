@@ -29,4 +29,32 @@ jobs:
     - name: Build and type check
       run: npm run build
       env:
-        CI: true 
+        CI: true
+        # Supabase環境変数を追加
+        NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+        SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        
+    # Slack通知を追加（成功時）
+    - name: Slack Notification on Success
+      if: success()
+      uses: rtCamp/action-slack-notify@v2
+      env:
+        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+        SLACK_CHANNEL: general # 通知先のチャンネル名を指定
+        SLACK_COLOR: good
+        SLACK_TITLE: ビルド成功 ✅
+        SLACK_MESSAGE: '`${{ github.repository }}`のTypeScriptチェックが正常に完了しました'
+        SLACK_FOOTER: 'GitHub Actions'
+        
+    # Slack通知を追加（失敗時）
+    - name: Slack Notification on Failure
+      if: failure()
+      uses: rtCamp/action-slack-notify@v2
+      env:
+        SLACK_WEBHOOK: ${{ secrets.SLACK_WEBHOOK_URL }}
+        SLACK_CHANNEL: general # 通知先のチャンネル名を指定
+        SLACK_COLOR: danger
+        SLACK_TITLE: ビルド失敗 ❌
+        SLACK_MESSAGE: '`${{ github.repository }}`のTypeScriptチェックが失敗しました。詳細はGitHub Actionsのログを確認してください。'
+        SLACK_FOOTER: 'GitHub Actions' 
