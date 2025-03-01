@@ -1,113 +1,391 @@
 import Image from 'next/image'
+import Link from 'next/link'
+import TestimonialCard from '@/components/testimonial-card'
+import PricingCard from '@/components/pricing-card'
+import FeatureCard from '@/components/feature-card'
+import HowItWorksStep from '@/components/how-it-works-step'
 
 export default function Home() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
-      <div className="z-10 max-w-5xl w-full items-center justify-between font-mono text-sm lg:flex">
-        <p className="fixed left-0 top-0 flex w-full justify-center border-b border-gray-300 bg-gradient-to-b from-zinc-200 pb-6 pt-8 backdrop-blur-2xl dark:border-neutral-800 dark:bg-zinc-800/30 dark:from-inherit lg:static lg:w-auto  lg:rounded-xl lg:border lg:bg-gray-200 lg:p-4 lg:dark:bg-zinc-800/30">
-          Get started by editing&nbsp;
-          <code className="font-mono font-bold">app/page.tsx</code>
-        </p>
-        <div className="fixed bottom-0 left-0 flex h-48 w-full items-end justify-center bg-gradient-to-t from-white via-white dark:from-black dark:via-black lg:static lg:h-auto lg:w-auto lg:bg-none">
-          <a
-            className="pointer-events-none flex place-items-center gap-2 p-8 lg:pointer-events-auto lg:p-0"
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{' '}
+    <div className="flex min-h-screen flex-col bg-gradient">
+      {/* ナビゲーションバー */}
+      <header className="sticky top-0 z-40 w-full border-b bg-white/95 backdrop-blur">
+        <div className="container flex h-16 items-center justify-between px-4 md:px-6">
+          <div className="flex items-center gap-2">
             <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className="dark:invert"
-              width={100}
-              height={24}
-              priority
+              src="/placeholder.svg?height=32&width=32"
+              width={32}
+              height={32}
+              alt="Logo"
+              className="rounded-full"
             />
-          </a>
+            <span className="text-xl font-bold text-gradient">My Little Fancam</span>
+          </div>
+          <nav className="hidden md:flex items-center gap-6">
+            <Link href="#features" className="text-sm font-medium hover:text-milab-600">
+              特徴
+            </Link>
+            <Link href="#how-it-works" className="text-sm font-medium hover:text-milab-600">
+              使い方
+            </Link>
+            <Link href="#testimonials" className="text-sm font-medium hover:text-milab-600">
+              お客様の声
+            </Link>
+            <Link href="#pricing" className="text-sm font-medium hover:text-milab-600">
+              料金
+            </Link>
+          </nav>
+          <div className="flex items-center gap-4">
+            <Link href="/login" className="text-sm font-medium hover:text-milab-600 hidden md:block">
+              ログイン
+            </Link>
+            <button className="inline-flex h-10 items-center justify-center rounded-md bg-milab-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-milab-600 focus:outline-none focus:ring-2 focus:ring-milab-400 focus:ring-offset-2">
+              <Link href="/register" className="text-white">
+                無料で始める
+              </Link>
+            </button>
+          </div>
         </div>
-      </div>
+      </header>
 
-      <div className="relative flex place-items-center before:absolute before:h-[300px] before:w-[480px] before:-translate-x-1/2 before:rounded-full before:bg-gradient-radial before:from-white before:to-transparent before:blur-2xl before:content-[''] after:absolute after:-z-20 after:h-[180px] after:w-[240px] after:translate-x-1/3 after:bg-gradient-conic after:from-sky-200 after:via-blue-200 after:blur-2xl after:content-[''] before:dark:bg-gradient-to-br before:dark:from-transparent before:dark:to-blue-700 before:dark:opacity-10 after:dark:from-sky-900 after:dark:via-[#0141ff] after:dark:opacity-40 before:lg:h-[360px] z-[-1]">
-        <Image
-          className="relative dark:drop-shadow-[0_0_0.3rem_#ffffff70] dark:invert"
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
+      <main className="flex-1">
+        {/* ヒーローセクション */}
+        <section className="relative overflow-hidden py-20 md:py-32">
+          <div className="container relative z-10 grid gap-12 px-4 md:grid-cols-2 md:items-center md:px-6">
+            <div className="space-y-6 text-center md:text-left">
+              <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl">
+                子どもたちの
+                <span className="text-gradient">素敵な瞬間</span>
+                を永遠に
+              </h1>
+              <p className="text-lg text-gray-600 md:text-xl">
+                学校や保育園での特別な瞬間を逃さない。みんなで撮った写真から、あなたのお子さんのベストショットを見つけ、共有し、残しましょう。
+              </p>
+              <div className="flex flex-col gap-4 sm:flex-row sm:justify-center md:justify-start">
+                <button className="inline-flex h-11 items-center justify-center rounded-md bg-milab-500 px-8 py-2 text-sm font-medium text-white transition-colors hover:bg-milab-600 focus:outline-none focus:ring-2 focus:ring-milab-400 focus:ring-offset-2">
+                  <Link href="/register" className="text-white">
+                    今すぐ始める
+                  </Link>
+                </button>
+                <button className="inline-flex h-11 items-center justify-center rounded-md border border-input bg-white px-8 py-2 text-sm font-medium transition-colors hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-milab-400 focus:ring-offset-2">
+                  <Link href="#how-it-works">詳しく見る</Link>
+                </button>
+              </div>
+            </div>
+            <div className="relative mx-auto aspect-square w-full max-w-md rounded-full bg-gradient-to-br from-milab-100 to-milab-200 p-4 md:p-6">
+              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-milab-100/80 to-milab-200/80 blur-xl"></div>
+              <div className="relative h-full w-full overflow-hidden rounded-full border-8 border-white shadow-xl">
+                <Image
+                  src="/placeholder.svg"
+                  width={600}
+                  height={600}
+                  alt="子どもたちの笑顔"
+                  className="h-full w-full object-cover"
+                  priority
+                />
+              </div>
+            </div>
+          </div>
+          <div className="absolute inset-0 bg-[url('/placeholder.svg')] bg-repeat opacity-5"></div>
+        </section>
 
-      <div className="mb-32 grid text-center lg:max-w-5xl lg:w-full lg:mb-0 lg:grid-cols-4 lg:text-left">
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Docs{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Find in-depth information about Next.js features and API.
-          </p>
-        </a>
+        {/* 特徴セクション */}
+        <section id="features" className="py-20 bg-white">
+          <div className="container px-4 md:px-6">
+            <div className="mx-auto mb-16 max-w-2xl text-center">
+              <h2 className="mb-4 text-3xl font-bold tracking-tight sm:text-4xl">
+                子どもたちの思い出を
+                <span className="text-gradient">もっと素敵に</span>
+              </h2>
+              <p className="text-lg text-gray-600">
+                My Little
+                Fancamは、学校や保育園での子どもたちの特別な瞬間を、みんなで共有し、残すためのプラットフォームです。
+              </p>
+            </div>
+            <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+              <FeatureCard
+                icon="Search"
+                title="AIで自動検出"
+                description="顔認識AIが、たくさんの写真の中からあなたのお子さんを自動で見つけ出します。"
+              />
+              <FeatureCard
+                icon="Camera"
+                title="高品質な写真"
+                description="プロ並みの写真編集機能で、どんな写真も美しく仕上げることができます。"
+              />
+              <FeatureCard
+                icon="Share2"
+                title="安全な共有"
+                description="プライバシーを守りながら、家族や友人と安全に写真を共有できます。"
+              />
+              <FeatureCard
+                icon="Gift"
+                title="撮影者に還元"
+                description="素敵な写真を撮った人に報酬が入る、フェアなシステムを採用しています。"
+              />
+              <FeatureCard
+                icon="Calendar"
+                title="イベント管理"
+                description="学校や保育園のイベントごとに写真を整理し、簡単に探せます。"
+              />
+              <FeatureCard
+                icon="Download"
+                title="高解像度ダウンロード"
+                description="購入した写真は高解像度でダウンロードでき、印刷にも最適です。"
+              />
+            </div>
+          </div>
+        </section>
 
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Learn{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Learn about Next.js in an interactive course with&nbsp;quizzes!
-          </p>
-        </a>
+        {/* 使い方セクション */}
+        <section id="how-it-works" className="py-20 bg-gradient">
+          <div className="container px-4 md:px-6">
+            <div className="mx-auto mb-16 max-w-2xl text-center">
+              <h2 className="mb-4 text-3xl font-bold tracking-tight sm:text-4xl">
+                <span className="text-gradient">簡単3ステップ</span>
+                で始められます
+              </h2>
+              <p className="text-lg text-gray-600">My Little Fancamは、誰でも簡単に使えるように設計されています。</p>
+            </div>
+            <div className="grid gap-12 md:grid-cols-3">
+              <HowItWorksStep
+                number="1"
+                title="写真をアップロード"
+                description="イベントで撮影した写真をアップロードするだけ。AIが自動で顔を検出します。"
+              />
+              <HowItWorksStep
+                number="2"
+                title="お子さんを登録"
+                description="お子さんの顔写真を登録すると、AIが自動であなたのお子さんの写真を見つけ出します。"
+              />
+              <HowItWorksStep
+                number="3"
+                title="写真を購入・共有"
+                description="気に入った写真を購入して高解像度でダウンロードしたり、家族と共有したりできます。"
+              />
+            </div>
+          </div>
+        </section>
 
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Templates{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Explore starter templates for Next.js.
-          </p>
-        </a>
+        {/* 統計セクション */}
+        <section className="py-16 bg-milab-500 text-white">
+          <div className="container px-4 md:px-6">
+            <div className="grid gap-8 text-center md:grid-cols-4">
+              <div>
+                <div className="text-4xl font-bold">1,000+</div>
+                <div className="mt-2">参加している学校・保育園</div>
+              </div>
+              <div>
+                <div className="text-4xl font-bold">10万+</div>
+                <div className="mt-2">登録ユーザー</div>
+              </div>
+              <div>
+                <div className="text-4xl font-bold">100万+</div>
+                <div className="mt-2">共有された写真</div>
+              </div>
+              <div>
+                <div className="text-4xl font-bold">98%</div>
+                <div className="mt-2">満足度</div>
+              </div>
+            </div>
+          </div>
+        </section>
 
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className="group rounded-lg border border-transparent px-5 py-4 transition-colors hover:border-gray-300 hover:bg-gray-100 hover:dark:border-neutral-700 hover:dark:bg-neutral-800/30"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2 className={`mb-3 text-2xl font-semibold`}>
-            Deploy{' '}
-            <span className="inline-block transition-transform group-hover:translate-x-1 motion-reduce:transform-none">
-              -&gt;
-            </span>
-          </h2>
-          <p className={`m-0 max-w-[30ch] text-sm opacity-50`}>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
+        {/* お客様の声セクション */}
+        <section id="testimonials" className="py-20 bg-white">
+          <div className="container px-4 md:px-6">
+            <div className="mx-auto mb-16 max-w-2xl text-center">
+              <h2 className="mb-4 text-3xl font-bold tracking-tight sm:text-4xl">
+                <span className="text-gradient">お客様の声</span>
+              </h2>
+              <p className="text-lg text-gray-600">
+                My Little Fancamを利用している保護者や学校の先生からの声をご紹介します。
+              </p>
+            </div>
+            <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
+              <TestimonialCard
+                name="佐藤 美咲"
+                role="保護者"
+                content="運動会で忙しくて子どもの写真を撮れなかったのですが、他のお母さんが撮った素敵な写真を購入できて本当に嬉しかったです。思い出が増えました！"
+                avatar="/placeholder.svg"
+              />
+              <TestimonialCard
+                name="田中 健太"
+                role="保護者"
+                content="子どもが活躍している瞬間を他の親御さんが撮ってくれていて、自分では絶対に撮れなかったアングルの写真が手に入りました。感謝しています。"
+                avatar="/placeholder.svg"
+              />
+              <TestimonialCard
+                name="山田 先生"
+                role="幼稚園教諭"
+                content="保護者同士の交流が増え、イベントの写真も充実するようになりました。先生としても子どもたちの成長を記録できて嬉しいです。"
+                avatar="/placeholder.svg"
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* 料金セクション */}
+        <section id="pricing" className="py-20 bg-gradient">
+          <div className="container px-4 md:px-6">
+            <div className="mx-auto mb-16 max-w-2xl text-center">
+              <h2 className="mb-4 text-3xl font-bold tracking-tight sm:text-4xl">
+                <span className="text-gradient">シンプルな料金プラン</span>
+              </h2>
+              <p className="text-lg text-gray-600">
+                必要な分だけお支払いいただけるフレキシブルなプランをご用意しています。
+              </p>
+            </div>
+            <div className="grid gap-8 md:grid-cols-3">
+              <PricingCard
+                title="ベーシック"
+                price="無料"
+                description="お子さんの写真を見つけるための基本機能"
+                features={["お子さん1人の顔登録", "月10枚までの写真閲覧", "低解像度ダウンロード", "基本的な検索機能"]}
+                buttonText="無料で始める"
+                buttonVariant="outline"
+              />
+              <PricingCard
+                title="スタンダード"
+                price="¥980"
+                period="月額"
+                description="家族全員の写真を管理したい方に"
+                features={[
+                  "お子さん3人までの顔登録",
+                  "月50枚までの写真閲覧",
+                  "高解像度ダウンロード5枚/月",
+                  "詳細な検索機能",
+                  "家族との共有機能",
+                ]}
+                buttonText="スタンダードを選ぶ"
+                buttonVariant="default"
+                highlighted={true}
+              />
+              <PricingCard
+                title="プレミアム"
+                price="¥1,980"
+                period="月額"
+                description="プロ品質の写真と高度な機能が必要な方に"
+                features={[
+                  "お子さん5人までの顔登録",
+                  "無制限の写真閲覧",
+                  "高解像度ダウンロード20枚/月",
+                  "プロ級の編集ツール",
+                  "優先サポート",
+                  "年間フォトブック1冊",
+                ]}
+                buttonText="プレミアムを選ぶ"
+                buttonVariant="outline"
+              />
+            </div>
+          </div>
+        </section>
+
+        {/* CTA セクション */}
+        <section className="py-16 bg-milab-500 text-white">
+          <div className="container px-4 md:px-6">
+            <div className="mx-auto max-w-3xl text-center">
+              <h2 className="mb-4 text-3xl font-bold tracking-tight sm:text-4xl">
+                子どもたちの素敵な瞬間を逃さないために
+              </h2>
+              <p className="mb-8 text-lg">My Little Fancamで、思い出をもっと豊かに、もっと簡単に残しましょう。</p>
+              <button className="inline-flex h-11 items-center justify-center rounded-md bg-white px-8 py-2 text-sm font-medium text-milab-600 transition-colors hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-milab-500">
+                <Link href="/register">今すぐ無料で始める</Link>
+              </button>
+            </div>
+          </div>
+        </section>
+      </main>
+
+      {/* フッター */}
+      <footer className="border-t bg-white py-12">
+        <div className="container px-4 md:px-6">
+          <div className="grid gap-8 md:grid-cols-4">
+            <div>
+              <div className="flex items-center gap-2">
+                <Image
+                  src="/placeholder.svg"
+                  width={32}
+                  height={32}
+                  alt="Logo"
+                  className="rounded-full"
+                />
+                <span className="text-xl font-bold text-gradient">My Little Fancam</span>
+              </div>
+              <p className="mt-4 text-sm text-gray-500">
+                子どもたちの素敵な瞬間を、みんなで共有し、永遠に残すためのプラットフォーム
+              </p>
+            </div>
+            <div>
+              <h3 className="mb-4 text-sm font-semibold">サービス</h3>
+              <ul className="space-y-2 text-sm">
+                <li>
+                  <Link href="#" className="text-gray-500 hover:text-milab-600">
+                    写真共有
+                  </Link>
+                </li>
+                <li>
+                  <Link href="#" className="text-gray-500 hover:text-milab-600">
+                    AIフォト検索
+                  </Link>
+                </li>
+                <li>
+                  <Link href="#" className="text-gray-500 hover:text-milab-600">
+                    フォトブック作成
+                  </Link>
+                </li>
+                <li>
+                  <Link href="#" className="text-gray-500 hover:text-milab-600">
+                    学校向けプラン
+                  </Link>
+                </li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="mb-4 text-sm font-semibold">会社情報</h3>
+              <ul className="space-y-2 text-sm">
+                <li>
+                  <Link href="#" className="text-gray-500 hover:text-milab-600">
+                    会社概要
+                  </Link>
+                </li>
+                <li>
+                  <Link href="#" className="text-gray-500 hover:text-milab-600">
+                    プライバシーポリシー
+                  </Link>
+                </li>
+                <li>
+                  <Link href="#" className="text-gray-500 hover:text-milab-600">
+                    利用規約
+                  </Link>
+                </li>
+                <li>
+                  <Link href="#" className="text-gray-500 hover:text-milab-600">
+                    お問い合わせ
+                  </Link>
+                </li>
+              </ul>
+            </div>
+            <div>
+              <h3 className="mb-4 text-sm font-semibold">ニュースレター</h3>
+              <p className="mb-4 text-sm text-gray-500">最新情報をお届けします</p>
+              <div className="flex gap-2">
+                <input
+                  type="email"
+                  placeholder="メールアドレス"
+                  className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
+                />
+                <button className="inline-flex h-9 items-center justify-center rounded-md bg-milab-500 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-milab-600 focus:outline-none focus:ring-2 focus:ring-milab-400 focus:ring-offset-2">
+                  登録
+                </button>
+              </div>
+            </div>
+          </div>
+          <div className="mt-12 border-t pt-6 text-center text-sm text-gray-500">
+            &copy; {new Date().getFullYear()} My Little Fancam. All rights reserved.
+          </div>
+        </div>
+      </footer>
+    </div>
   )
 }

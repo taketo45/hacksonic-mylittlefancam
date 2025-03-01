@@ -1,0 +1,213 @@
+erDiagram
+    OrganizationMst ||--o{ Organization_HostTbl : "所属"
+    OrganizationMst {
+        string organizationId "組織ID"
+        string organizationName "組織名"
+        string organizationAddress "組織住所"
+        string organizationContact "組織連絡先"
+        string organizationType "組織区分"
+        string department "部署"
+    }
+    
+    Organization_HostTbl {
+        string organizationId "組織ID"
+        string hostId "主催者ID"
+    }
+    
+    HostTbl ||--o{ Organization_HostTbl : "所属"
+    HostTbl ||--o{ HostDetailTbl : "詳細"
+    HostTbl ||--o{ Host_EventTbl : "主催"
+    HostTbl {
+        string hostId "主催者ID"
+        string name "氏名"
+        string email "メール"
+        string password "パスワード"
+        string accountStatus "アカウント状態"
+    }
+    
+    HostDetailTbl {
+        string hostId "主催者ID"
+        string address "住所"
+        string phoneNumber "電話番号"
+        string organizationId "組織ID"
+    }
+    
+    Host_EventTbl ||--o{ EventTbl : "開催"
+    Host_EventTbl {
+        string hostId "主催者ID"
+        string eventId "イベントID"
+        string eventRole "イベントロール"
+    }
+    
+    EventTbl ||--o{ EventSlotTbl : "枠設定"
+    EventTbl {
+        string eventId "イベントID"
+        string eventName "イベント名"
+        string eventStatus "イベント状態"
+    }
+    
+    Host_EventSlotTbl ||--o{ EventSlotTbl : "担当"
+    Host_EventSlotTbl {
+        string hostId "主催者ID"
+        string eventSlotId "イベント枠ID"
+        string slotRole "枠ロール"
+    }
+    
+    EventSlotTbl ||--o{ FacilityMst : "使用"
+    EventSlotTbl {
+        string eventId "イベントID"
+        string eventSlotId "イベント枠ID"
+        string eventSlotName "イベント枠名"
+        date eventDate "開催日"
+        time eventTime "開催時刻"
+        string facilityId "施設ID"
+        string geoCode "GEOコード"
+        string eventSlotDetail "イベント枠詳細"
+        string eventSlotStatus "イベント枠状態"
+        string ticketUrl "チケット差込URL"
+    }
+    
+    FacilityMst ||--o{ SeatBlockTbl : "設置"
+    FacilityMst {
+        string facilityId "施設ID"
+        string facilityName "施設名"
+        string facilityAddress "施設住所"
+        string facilityPhone "施設電話番号"
+    }
+    
+    SeatBlockTbl {
+        string facilityId "施設ID"
+        string seatBlockId "座席ブロックID"
+        string seatType "座席種別"
+        string areaId "エリアID"
+        string blockId "ブロックID"
+        string subBlockId "サブブロックID"
+        string startLineId "開始線ID"
+        string endLineId "終了線ID"
+        string startRowId "開始横ID"
+        string endRowId "終了横ID"
+        string note "補足"
+    }
+    
+    UserTbl ||--o{ User_ParticipationTbl : "参加"
+    UserTbl {
+        string userId "ユーザーID"
+        string name "氏名"
+        string email "メール"
+        string password "パスワード"
+        string accountStatus "アカウント状態"
+    }
+    
+    User_ParticipationTbl ||--o{ EventSlotTbl : "参加"
+    User_ParticipationTbl ||--o{ SeatBlockTbl : "着席"
+    User_ParticipationTbl {
+        string eventSlotId "イベント枠ID"
+        string facilityId "施設ID"
+        string seatBlockId "座席ブロックID"
+        string seatLineId "座席縦ID"
+        string seatRowId "座席横ID"
+    }
+    
+    PhotographerTbl ||--o{ PhotographerAssignTbl : "担当"
+    PhotographerTbl {
+        string photographerId "撮影者ID"
+        string name "氏名"
+        string email "メール"
+        string password "パスワード"
+        string accountStatus "アカウント状態"
+    }
+    
+    PhotographerAssignTbl ||--o{ EventTbl : "撮影"
+    PhotographerAssignTbl ||--o{ EventSlotTbl : "撮影"
+    PhotographerAssignTbl {
+        string photographerId "撮影者ID"
+        string targetEventId "撮影対象イベントID"
+        string targetEventSlotId "撮影対象イベント枠ID"
+        string targetAreaId "撮影対象エリアID"
+        string targetBlockId "撮影対象ブロックID"
+        string targetSubBlockId "撮影対象サブブロックID"
+        string targetStartLineId "撮影対象開始線ID"
+        string targetEndLineId "撮影対象終了線ID"
+        string targetStartRowId "撮影対象開始横ID"
+        string targetEndRowId "撮影対象終了横ID"
+    }
+    
+    PhotoShootTbl ||--o{ PhotographerTbl : "撮影"
+    PhotoShootTbl ||--o{ EventSlotTbl : "対象"
+    PhotoShootTbl {
+        string shootId "撮影ID"
+        string eventSlotId "イベント枠ID"
+        string photographerId "撮影者ID"
+        string storageUrl "StorageURL"
+    }
+    
+    OriginalPhotoTbl ||--o{ PhotoShootTbl : "原本"
+    OriginalPhotoTbl {
+        string shootId "撮影ID"
+        string originalPhotoId "OriginalPhotoID"
+        string storageUrl "StorageURL"
+        string userPreference "ユーザー推し区分"
+        string geoCode "GEOコード"
+        datetime shootDateTime "撮影日時"
+        boolean isNG "isNG"
+    }
+    
+    EditedPhotoTbl ||--o{ OriginalPhotoTbl : "元画像"
+    EditedPhotoTbl {
+        string originalPhotoId "OriginalPhotoID"
+        string editedPhotoId "修正PhotoID"
+        string storageUrl "StorageURL"
+        datetime editDateTime "修正日時"
+        string userPreference "ユーザー推し区分"
+    }
+    
+    ProcessedPhotoTbl ||--o{ EditedPhotoTbl : "元画像"
+    ProcessedPhotoTbl ||--o{ UserTbl : "作成者"
+    ProcessedPhotoTbl {
+        string userId "ユーザーID"
+        string processedPhotoId "加工PhotoID"
+        string editedPhotoId "修正PhotoID"
+        string frameCoordinate "フレーム座標"
+        string wipeCoordinate "推しワイプ座標"
+        string editSettingsJson "修正設定JSON"
+        datetime processDateTime "加工日時"
+        string processedPhotoUrl "加工写真URL"
+        boolean isSold "isSold"
+        boolean isDownloaded "isDownloaded"
+        boolean isPrinted "isPrinted"
+    }
+    
+    CartTbl ||--o{ ProcessedPhotoTbl : "商品"
+    CartTbl {
+        string processedPhotoId "加工PhotoID"
+        string purchaseId "購買ID"
+    }
+    
+    PurchaseTbl ||--o{ CartTbl : "注文"
+    PurchaseTbl ||--o{ UserTbl : "顧客"
+    PurchaseTbl ||--o{ EditedPhotoTbl : "対象"
+    PurchaseTbl {
+        string purchaseId "購買ID"
+        string cartId "カートID"
+        string userId "ユーザーID"
+        string editedPhotoId "修正PhotoID"
+        string frameCoordinate "フレーム座標"
+        string wipeCoordinate "推しワイプ座標"
+        string editSettingsJson "修正設定JSON"
+        datetime processDateTime "加工日時"
+        string processedPhotoUrl "加工写真URL"
+        boolean isSold "isSold"
+        boolean isDownloaded "isDownloaded"
+        boolean isPrinted "isPrinted"
+    }
+    
+    PrintManagementTbl ||--o{ PurchaseTbl : "印刷対象"
+    PrintManagementTbl ||--o{ UserTbl : "依頼者"
+    PrintManagementTbl ||--o{ ProcessedPhotoTbl : "印刷画像"
+    PrintManagementTbl {
+        string purchaseId "購買ID"
+        string userId "ユーザーID"
+        string processedPhotoId "加工PhotoID"
+        string processedPhotoUrl "加工写真URL"
+        string status "Status"
+    }

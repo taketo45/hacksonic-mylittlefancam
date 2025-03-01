@@ -1,0 +1,634 @@
+import { eq, and, desc, asc, like, inArray } from 'drizzle-orm';
+import { db } from './index';
+import { 
+  organizationMst, 
+  hostTbl, 
+  hostDetailTbl, 
+  eventTbl, 
+  eventSlotTbl, 
+  userTbl, 
+  photographerTbl, 
+  photoShootTbl, 
+  originalPhotoTbl, 
+  editedPhotoTbl, 
+  processedPhotoTbl, 
+  cartTbl, 
+  purchaseTbl, 
+  printManagementTbl 
+} from './schema';
+import { v4 as uuidv4 } from 'uuid';
+
+// 組織関連のクエリ
+export const organizationQueries = {
+  /**
+   * 組織を作成する
+   * @param data 組織データ
+   * @returns 作成された組織
+   */
+  createOrganization: async (data: {
+    organizationName: string;
+    organizationAddress?: string;
+    organizationContact?: string;
+    organizationType?: string;
+    department?: string;
+  }) => {
+    const organizationId = uuidv4();
+    return await db.insert(organizationMst).values({
+      organizationId,
+      ...data,
+    }).returning();
+  },
+
+  /**
+   * 組織IDで組織を取得する
+   * @param organizationId 組織ID
+   * @returns 組織情報
+   */
+  getOrganizationById: async (organizationId: string) => {
+    return await db.query.organizationMst.findFirst({
+      where: eq(organizationMst.organizationId, organizationId),
+    });
+  },
+
+  /**
+   * 組織名で組織を検索する
+   * @param name 組織名（部分一致）
+   * @returns 組織情報の配列
+   */
+  searchOrganizationsByName: async (name: string) => {
+    return await db.query.organizationMst.findMany({
+      where: like(organizationMst.organizationName, `%${name}%`),
+    });
+  },
+
+  /**
+   * 組織情報を更新する
+   * @param organizationId 組織ID
+   * @param data 更新データ
+   * @returns 更新された組織情報
+   */
+  updateOrganization: async (organizationId: string, data: Partial<typeof organizationMst.$inferInsert>) => {
+    return await db.update(organizationMst)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(organizationMst.organizationId, organizationId))
+      .returning();
+  },
+};
+
+// 主催者関連のクエリ
+export const hostQueries = {
+  /**
+   * 主催者を作成する
+   * @param data 主催者データ
+   * @returns 作成された主催者
+   */
+  createHost: async (data: {
+    name: string;
+    email: string;
+    password: string;
+    accountStatus?: string;
+  }) => {
+    const hostId = uuidv4();
+    return await db.insert(hostTbl).values({
+      hostId,
+      ...data,
+    }).returning();
+  },
+
+  /**
+   * 主催者IDで主催者を取得する
+   * @param hostId 主催者ID
+   * @returns 主催者情報
+   */
+  getHostById: async (hostId: string) => {
+    return await db.query.hostTbl.findFirst({
+      where: eq(hostTbl.hostId, hostId),
+      with: {
+        hostDetails: true,
+      },
+    });
+  },
+
+  /**
+   * メールアドレスで主催者を取得する
+   * @param email メールアドレス
+   * @returns 主催者情報
+   */
+  getHostByEmail: async (email: string) => {
+    return await db.query.hostTbl.findFirst({
+      where: eq(hostTbl.email, email),
+    });
+  },
+
+  /**
+   * 主催者情報を更新する
+   * @param hostId 主催者ID
+   * @param data 更新データ
+   * @returns 更新された主催者情報
+   */
+  updateHost: async (hostId: string, data: Partial<typeof hostTbl.$inferInsert>) => {
+    return await db.update(hostTbl)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(hostTbl.hostId, hostId))
+      .returning();
+  },
+
+  /**
+   * 主催者詳細情報を作成または更新する
+   * @param hostId 主催者ID
+   * @param data 主催者詳細データ
+   * @returns 作成または更新された主催者詳細情報
+   */
+  upsertHostDetail: async (hostId: string, data: {
+    address?: string;
+    phoneNumber?: string;
+    organizationId?: string;
+  }) => {
+    const existingDetail = await db.query.hostDetailTbl.findFirst({
+      where: eq(hostDetailTbl.hostId, hostId),
+    });
+
+    if (existingDetail) {
+      return await db.update(hostDetailTbl)
+        .set({ ...data, updatedAt: new Date() })
+        .where(eq(hostDetailTbl.hostId, hostId))
+        .returning();
+    } else {
+      return await db.insert(hostDetailTbl).values({
+        hostId,
+        ...data,
+      }).returning();
+    }
+  },
+};
+
+// イベント関連のクエリ
+export const eventQueries = {
+  /**
+   * イベントを作成する
+   * @param data イベントデータ
+   * @returns 作成されたイベント
+   */
+  createEvent: async (data: {
+    eventName: string;
+    eventStatus?: string;
+    hostId: string;
+    eventRole?: string;
+  }) => {
+    const eventId = uuidv4();
+    
+    // トランザクションを使用して、イベントとホスト-イベント関連を同時に作成
+    return await db.transaction(async (tx) => {
+      const event = await tx.insert(eventTbl).values({
+        eventId,
+        eventName: data.eventName,
+        eventStatus: data.eventStatus,
+      }).returning();
+
+      await tx.insert(hostEventTbl).values({
+        hostId: data.hostId,
+        eventId,
+        eventRole: data.eventRole,
+      });
+
+      return event;
+    });
+  },
+
+  /**
+   * イベントIDでイベントを取得する
+   * @param eventId イベントID
+   * @returns イベント情報
+   */
+  getEventById: async (eventId: string) => {
+    return await db.query.eventTbl.findFirst({
+      where: eq(eventTbl.eventId, eventId),
+      with: {
+        eventSlots: true,
+        hostEvents: {
+          with: {
+            host: true,
+          },
+        },
+      },
+    });
+  },
+
+  /**
+   * 主催者IDに関連するイベントを取得する
+   * @param hostId 主催者ID
+   * @returns イベント情報の配列
+   */
+  getEventsByHostId: async (hostId: string) => {
+    return await db.query.hostEventTbl.findMany({
+      where: eq(hostEventTbl.hostId, hostId),
+      with: {
+        event: true,
+      },
+    });
+  },
+
+  /**
+   * イベント情報を更新する
+   * @param eventId イベントID
+   * @param data 更新データ
+   * @returns 更新されたイベント情報
+   */
+  updateEvent: async (eventId: string, data: Partial<typeof eventTbl.$inferInsert>) => {
+    return await db.update(eventTbl)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(eventTbl.eventId, eventId))
+      .returning();
+  },
+
+  /**
+   * イベント枠を作成する
+   * @param data イベント枠データ
+   * @returns 作成されたイベント枠
+   */
+  createEventSlot: async (data: {
+    eventId: string;
+    eventSlotName: string;
+    eventDate?: Date;
+    eventTime?: string;
+    facilityId?: string;
+    geoCode?: string;
+    eventSlotDetail?: string;
+    eventSlotStatus?: string;
+    ticketUrl?: string;
+  }) => {
+    const eventSlotId = uuidv4();
+    return await db.insert(eventSlotTbl).values({
+      eventSlotId,
+      ...data,
+    }).returning();
+  },
+
+  /**
+   * イベント枠IDでイベント枠を取得する
+   * @param eventSlotId イベント枠ID
+   * @returns イベント枠情報
+   */
+  getEventSlotById: async (eventSlotId: string) => {
+    return await db.query.eventSlotTbl.findFirst({
+      where: eq(eventSlotTbl.eventSlotId, eventSlotId),
+      with: {
+        event: true,
+      },
+    });
+  },
+
+  /**
+   * イベントIDに関連するイベント枠を取得する
+   * @param eventId イベントID
+   * @returns イベント枠情報の配列
+   */
+  getEventSlotsByEventId: async (eventId: string) => {
+    return await db.query.eventSlotTbl.findMany({
+      where: eq(eventSlotTbl.eventId, eventId),
+    });
+  },
+
+  /**
+   * イベント枠情報を更新する
+   * @param eventSlotId イベント枠ID
+   * @param data 更新データ
+   * @returns 更新されたイベント枠情報
+   */
+  updateEventSlot: async (eventSlotId: string, data: Partial<typeof eventSlotTbl.$inferInsert>) => {
+    return await db.update(eventSlotTbl)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(eventSlotTbl.eventSlotId, eventSlotId))
+      .returning();
+  },
+};
+
+// ユーザー関連のクエリ
+export const userQueries = {
+  /**
+   * ユーザーを作成する
+   * @param data ユーザーデータ
+   * @returns 作成されたユーザー
+   */
+  createUser: async (data: {
+    name: string;
+    email: string;
+    password: string;
+    accountStatus?: string;
+  }) => {
+    const userId = uuidv4();
+    return await db.insert(userTbl).values({
+      userId,
+      ...data,
+    }).returning();
+  },
+
+  /**
+   * ユーザーIDでユーザーを取得する
+   * @param userId ユーザーID
+   * @returns ユーザー情報
+   */
+  getUserById: async (userId: string) => {
+    return await db.query.userTbl.findFirst({
+      where: eq(userTbl.userId, userId),
+    });
+  },
+
+  /**
+   * メールアドレスでユーザーを取得する
+   * @param email メールアドレス
+   * @returns ユーザー情報
+   */
+  getUserByEmail: async (email: string) => {
+    return await db.query.userTbl.findFirst({
+      where: eq(userTbl.email, email),
+    });
+  },
+
+  /**
+   * ユーザー情報を更新する
+   * @param userId ユーザーID
+   * @param data 更新データ
+   * @returns 更新されたユーザー情報
+   */
+  updateUser: async (userId: string, data: Partial<typeof userTbl.$inferInsert>) => {
+    return await db.update(userTbl)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(userTbl.userId, userId))
+      .returning();
+  },
+
+  /**
+   * ユーザーのイベント参加情報を登録する
+   * @param data 参加情報データ
+   * @returns 作成された参加情報
+   */
+  createUserParticipation: async (data: {
+    userId: string;
+    eventSlotId: string;
+    facilityId?: string;
+    seatBlockId?: string;
+    seatLineId?: string;
+    seatRowId?: string;
+  }) => {
+    return await db.insert(userTbl).values(data).returning();
+  },
+};
+
+// 写真関連のクエリ
+export const photoQueries = {
+  /**
+   * 撮影情報を作成する
+   * @param data 撮影情報データ
+   * @returns 作成された撮影情報
+   */
+  createPhotoShoot: async (data: {
+    eventSlotId?: string;
+    photographerId?: string;
+    storageUrl?: string;
+  }) => {
+    const shootId = uuidv4();
+    return await db.insert(photoShootTbl).values({
+      shootId,
+      ...data,
+    }).returning();
+  },
+
+  /**
+   * オリジナル写真を作成する
+   * @param data オリジナル写真データ
+   * @returns 作成されたオリジナル写真
+   */
+  createOriginalPhoto: async (data: {
+    shootId?: string;
+    storageUrl: string;
+    userPreference?: string;
+    geoCode?: string;
+    shootDateTime?: Date;
+    isNG?: boolean;
+  }) => {
+    const originalPhotoId = uuidv4();
+    return await db.insert(originalPhotoTbl).values({
+      originalPhotoId,
+      ...data,
+    }).returning();
+  },
+
+  /**
+   * 編集済み写真を作成する
+   * @param data 編集済み写真データ
+   * @returns 作成された編集済み写真
+   */
+  createEditedPhoto: async (data: {
+    originalPhotoId: string;
+    storageUrl: string;
+    editDateTime?: Date;
+    userPreference?: string;
+  }) => {
+    const editedPhotoId = uuidv4();
+    return await db.insert(editedPhotoTbl).values({
+      editedPhotoId,
+      ...data,
+    }).returning();
+  },
+
+  /**
+   * 加工済み写真を作成する
+   * @param data 加工済み写真データ
+   * @returns 作成された加工済み写真
+   */
+  createProcessedPhoto: async (data: {
+    userId?: string;
+    editedPhotoId: string;
+    frameCoordinate?: string;
+    wipeCoordinate?: string;
+    editSettingsJson?: string;
+    processDateTime?: Date;
+    processedPhotoUrl?: string;
+    isSold?: boolean;
+    isDownloaded?: boolean;
+    isPrinted?: boolean;
+  }) => {
+    const processedPhotoId = uuidv4();
+    return await db.insert(processedPhotoTbl).values({
+      processedPhotoId,
+      ...data,
+    }).returning();
+  },
+
+  /**
+   * ユーザーIDに関連する加工済み写真を取得する
+   * @param userId ユーザーID
+   * @returns 加工済み写真情報の配列
+   */
+  getProcessedPhotosByUserId: async (userId: string) => {
+    return await db.query.processedPhotoTbl.findMany({
+      where: eq(processedPhotoTbl.userId, userId),
+      with: {
+        editedPhoto: {
+          with: {
+            originalPhoto: true,
+          },
+        },
+      },
+    });
+  },
+
+  /**
+   * 編集済み写真IDに関連する加工済み写真を取得する
+   * @param editedPhotoId 編集済み写真ID
+   * @returns 加工済み写真情報の配列
+   */
+  getProcessedPhotosByEditedPhotoId: async (editedPhotoId: string) => {
+    return await db.query.processedPhotoTbl.findMany({
+      where: eq(processedPhotoTbl.editedPhotoId, editedPhotoId),
+    });
+  },
+
+  /**
+   * 加工済み写真情報を更新する
+   * @param processedPhotoId 加工済み写真ID
+   * @param data 更新データ
+   * @returns 更新された加工済み写真情報
+   */
+  updateProcessedPhoto: async (processedPhotoId: string, data: Partial<typeof processedPhotoTbl.$inferInsert>) => {
+    return await db.update(processedPhotoTbl)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(processedPhotoTbl.processedPhotoId, processedPhotoId))
+      .returning();
+  },
+};
+
+// カート・購入関連のクエリ
+export const purchaseQueries = {
+  /**
+   * カートに商品を追加する
+   * @param data カートデータ
+   * @returns 作成されたカート情報
+   */
+  addToCart: async (data: {
+    userId: string;
+    processedPhotoId: string;
+  }) => {
+    return await db.insert(cartTbl).values(data).returning();
+  },
+
+  /**
+   * ユーザーIDに関連するカート情報を取得する
+   * @param userId ユーザーID
+   * @returns カート情報の配列
+   */
+  getCartByUserId: async (userId: string) => {
+    return await db.query.cartTbl.findMany({
+      where: eq(cartTbl.userId, userId),
+      with: {
+        processedPhoto: {
+          with: {
+            editedPhoto: {
+              with: {
+                originalPhoto: true,
+              },
+            },
+          },
+        },
+      },
+    });
+  },
+
+  /**
+   * カートから商品を削除する
+   * @param id カートID
+   * @returns 削除結果
+   */
+  removeFromCart: async (id: number) => {
+    return await db.delete(cartTbl)
+      .where(eq(cartTbl.id, id))
+      .returning();
+  },
+
+  /**
+   * 購入情報を作成する
+   * @param data 購入データ
+   * @returns 作成された購入情報
+   */
+  createPurchase: async (data: {
+    userId: string;
+    processedPhotoId: string;
+    amount?: string;
+    currency?: string;
+    paymentStatus?: string;
+    paymentMethod?: string;
+    paymentId?: string;
+  }) => {
+    const purchaseId = uuidv4();
+    return await db.insert(purchaseTbl).values({
+      purchaseId,
+      ...data,
+    }).returning();
+  },
+
+  /**
+   * 購入IDで購入情報を取得する
+   * @param purchaseId 購入ID
+   * @returns 購入情報
+   */
+  getPurchaseById: async (purchaseId: string) => {
+    return await db.query.purchaseTbl.findFirst({
+      where: eq(purchaseTbl.purchaseId, purchaseId),
+      with: {
+        user: true,
+        processedPhoto: {
+          with: {
+            editedPhoto: {
+              with: {
+                originalPhoto: true,
+              },
+            },
+          },
+        },
+      },
+    });
+  },
+
+  /**
+   * ユーザーIDに関連する購入情報を取得する
+   * @param userId ユーザーID
+   * @returns 購入情報の配列
+   */
+  getPurchasesByUserId: async (userId: string) => {
+    return await db.query.purchaseTbl.findMany({
+      where: eq(purchaseTbl.userId, userId),
+      with: {
+        processedPhoto: true,
+      },
+    });
+  },
+
+  /**
+   * 印刷管理情報を作成する
+   * @param data 印刷管理データ
+   * @returns 作成された印刷管理情報
+   */
+  createPrintManagement: async (data: {
+    purchaseId: string;
+    userId: string;
+    processedPhotoId: string;
+    processedPhotoUrl?: string;
+    status?: string;
+  }) => {
+    return await db.insert(printManagementTbl).values(data).returning();
+  },
+
+  /**
+   * 印刷管理情報を更新する
+   * @param id 印刷管理ID
+   * @param data 更新データ
+   * @returns 更新された印刷管理情報
+   */
+  updatePrintManagement: async (id: number, data: Partial<typeof printManagementTbl.$inferInsert>) => {
+    return await db.update(printManagementTbl)
+      .set({ ...data, updatedAt: new Date() })
+      .where(eq(printManagementTbl.id, id))
+      .returning();
+  },
+}; 

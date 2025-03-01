@@ -1,0 +1,6 @@
+<svg width="600" height="600" viewBox="0 0 600 600" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="600" height="600" fill="#F0F4FF"/>
+  <path d="M300 300m-150 0a150 150 0 1 0 300 0a150 150 0 1 0 -300 0" fill="#CCE0FF"/>
+  <path d="M300 200L350 300L300 400L250 300L300 200Z" fill="#0066FF"/>
+  <text x="300" y="480" font-family="Arial" font-size="24" text-anchor="middle" fill="#0066FF">My Little Fancam</text>
+</svg> 
