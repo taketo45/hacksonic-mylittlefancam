@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import * as eventQueries from '@/src/db/queries';
+import * as queries from '@/src/db/queries';
 
 /**
  * GET /api/events/[id]/slots
@@ -35,7 +35,7 @@ export async function GET(
     }
     
     // イベントを取得して主催者かどうかを確認
-    const event = await eventQueries.getEventById(eventId);
+    const event = await queries.eventQueries.getEventById(eventId);
     
     if (!event) {
       return NextResponse.json(
@@ -45,7 +45,7 @@ export async function GET(
     }
     
     // イベント枠一覧を取得
-    const eventSlots = await eventQueries.getEventSlotsByEventId(eventId);
+    const eventSlots = await queries.eventQueries.getEventSlotsByEventId(eventId);
     
     return NextResponse.json({ eventSlots });
   } catch (error) {
@@ -102,7 +102,7 @@ export async function POST(
     }
     
     // イベントを取得して主催者かどうかを確認
-    const event = await eventQueries.getEventById(eventId);
+    const event = await queries.eventQueries.getEventById(eventId);
     
     if (!event) {
       return NextResponse.json(
@@ -112,7 +112,7 @@ export async function POST(
     }
     
     // イベント枠を作成
-    const eventSlot = await eventQueries.createEventSlot({
+    const eventSlot = await queries.eventQueries.createEventSlot({
       eventId,
       eventSlotName: body.eventSlotName,
       eventDate: body.eventDate,

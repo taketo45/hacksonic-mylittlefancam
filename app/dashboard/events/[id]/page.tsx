@@ -520,7 +520,7 @@ export default function EventDetailPage({ params }: { params: { id: string } }) 
   };
 
   // 日付をフォーマットする関数
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString: string | undefined | null) => {
     if (!dateString) return '';
     
     try {
@@ -539,36 +539,32 @@ export default function EventDetailPage({ params }: { params: { id: string } }) 
   const renderEventDetails = () => (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold mb-4">{event.eventName}</h2>
+        <h2 className="text-xl font-semibold mb-4">{event?.eventName}</h2>
         
-        {event.description && (
+        {event?.description && (
           <p className="text-gray-700 mb-4">{event.description}</p>
         )}
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
           <div className="flex items-center text-gray-600">
             <Calendar className="mr-2 h-5 w-5" />
-            <span>{formatDate(event.eventDate)}</span>
+            <span>{formatDate(event?.eventDate)}</span>
           </div>
           
           <div className="flex items-center text-gray-600">
             <MapPin className="mr-2 h-5 w-5" />
-            <span>{event.location}</span>
+            <span>{event?.location || '未設定'}</span>
+          </div>
+          
+          <div className="flex items-center text-gray-600">
+            <Clock className="mr-2 h-5 w-5" />
+            <span>ステータス: {event?.eventStatus || '準備中'}</span>
           </div>
         </div>
         
-        <div className="flex items-center mb-4">
-          <span className="text-sm font-medium mr-2">ステータス:</span>
-          {event.eventStatus && (
-            <span className={`px-2 py-1 rounded-full text-xs ${getStatusInfo(event.eventStatus).className}`}>
-              {getStatusInfo(event.eventStatus).label}
-            </span>
-          )}
-        </div>
-        
         <div className="text-sm text-gray-500">
-          <p>作成日: {formatDate(event.createdAt)}</p>
-          <p>更新日: {formatDate(event.updatedAt)}</p>
+          <p>作成日: {formatDate(event?.createdAt)}</p>
+          <p>更新日: {formatDate(event?.updatedAt)}</p>
         </div>
       </div>
       
@@ -684,7 +680,7 @@ export default function EventDetailPage({ params }: { params: { id: string } }) 
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Link 
-            href={`/dashboard/events/${event.id}/invite`}
+            href={`/dashboard/events/${event?.id}/invite`}
             className="flex items-center p-4 border rounded-lg hover:bg-gray-50 transition-colors"
           >
             <Share className="h-5 w-5 mr-3 text-milab-500" />
@@ -695,10 +691,10 @@ export default function EventDetailPage({ params }: { params: { id: string } }) 
           </Link>
           
           <Link 
-            href={`/dashboard/events/${event.id}/photos`}
+            href={`/dashboard/events/${event?.id}/photos`}
             className="flex items-center p-4 border rounded-lg hover:bg-gray-50 transition-colors"
           >
-            <Image className="h-5 w-5 mr-3 text-milab-500" />
+            <Image className="h-5 w-5 mr-3 text-milab-500" aria-label="写真管理アイコン" />
             <div>
               <h4 className="font-medium">写真管理</h4>
               <p className="text-sm text-gray-600">イベントの写真をアップロード・管理します</p>

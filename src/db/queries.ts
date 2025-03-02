@@ -309,7 +309,7 @@ export const eventQueries = {
     facilityPhone?: string | null;
     eventSlotDetail?: string | null;
     photographerId?: string | null;
-    basePrice?: number | null;
+    basePrice?: string | null;
     eventSlotStatus?: '準備中' | '公開中' | '終了' | 'キャンセル';
   }) => {
     const dbInstance = checkDb();
@@ -329,21 +329,19 @@ export const eventQueries = {
     const dbInstance = checkDb();
     return await dbInstance.query.eventSlotTbl.findFirst({
       where: eq(eventSlotTbl.eventSlotId, eventSlotId),
-      with: {
-        event: true,
-      },
     });
   },
 
   /**
-   * イベントIDに関連するイベント枠を取得する
+   * イベントIDに紐づくイベント枠一覧を取得する
    * @param eventId イベントID
-   * @returns イベント枠情報の配列
+   * @returns イベント枠一覧
    */
   getEventSlotsByEventId: async (eventId: string) => {
     const dbInstance = checkDb();
     return await dbInstance.query.eventSlotTbl.findMany({
       where: eq(eventSlotTbl.eventId, eventId),
+      orderBy: [desc(eventSlotTbl.createdAt)],
     });
   },
 
@@ -718,7 +716,9 @@ export const purchaseQueries = {
  */
 export async function getHosts() {
   try {
-    const hosts = await db.query.hostTbl.findMany({
+    const dbInstance = checkDb();
+    
+    const hosts = await dbInstance.query.hostTbl.findMany({
       columns: {
         hostId: true,
         name: true,
@@ -749,13 +749,17 @@ export async function createEventSlot(data: {
   facilityPhone?: string | null;
   eventSlotDetail?: string | null;
   photographerId?: string | null;
-  basePrice?: number | null;
+  basePrice?: string | null;
   eventSlotStatus?: '準備中' | '公開中' | '終了' | 'キャンセル';
 }) {
   try {
-    const [eventSlot] = await db
+    const dbInstance = checkDb();
+    const eventSlotId = uuidv4();
+    
+    const [eventSlot] = await dbInstance
       .insert(eventSlotTbl)
       .values({
+        eventSlotId,
         eventId: data.eventId,
         eventSlotName: data.eventSlotName,
         eventDate: data.eventDate || null,
@@ -778,35 +782,19 @@ export async function createEventSlot(data: {
 }
 
 /**
- * イベント枠をIDで取得する
+ * イベント枠IDでイベント枠を取得する
  * @param eventSlotId イベント枠ID
- * @returns イベント枠
+ * @returns イベント枠情報
  */
 export async function getEventSlotById(eventSlotId: string) {
   try {
-    const eventSlot = await db.query.eventSlotTbl.findFirst({
+    const dbInstance = checkDb();
+    
+    const eventSlot = await dbInstance.query.eventSlotTbl.findFirst({
       where: eq(eventSlotTbl.eventSlotId, eventSlotId),
-      with: {
-        event: true,
-        photographer: {
-          columns: {
-            hostId: true,
-            name: true,
-            email: true,
-          },
-        },
-      },
     });
-
-    if (!eventSlot) {
-      return null;
-    }
-
-    // 撮影者の情報を含める
-    return {
-      ...eventSlot,
-      photographerName: eventSlot.photographer?.name,
-    };
+    
+    return eventSlot;
   } catch (error) {
     console.error('イベント枠取得エラー:', error);
     throw error;
@@ -814,35 +802,20 @@ export async function getEventSlotById(eventSlotId: string) {
 }
 
 /**
- * イベントに紐づくイベント枠一覧を取得する
+ * イベントIDに紐づくイベント枠一覧を取得する
  * @param eventId イベントID
  * @returns イベント枠一覧
  */
 export async function getEventSlotsByEventId(eventId: string) {
   try {
-    const eventSlots = await db.query.eventSlotTbl.findMany({
+    const dbInstance = checkDb();
+    
+    const eventSlots = await dbInstance.query.eventSlotTbl.findMany({
       where: eq(eventSlotTbl.eventId, eventId),
-      orderBy: [
-        asc(eventSlotTbl.eventDate),
-        asc(eventSlotTbl.eventTime),
-        asc(eventSlotTbl.eventSlotName),
-      ],
-      with: {
-        photographer: {
-          columns: {
-            hostId: true,
-            name: true,
-            email: true,
-          },
-        },
-      },
+      orderBy: [desc(eventSlotTbl.createdAt)],
     });
-
-    // 撮影者の情報を含める
-    return eventSlots.map(slot => ({
-      ...slot,
-      photographerName: slot.photographer?.name,
-    }));
+    
+    return eventSlots;
   } catch (error) {
     console.error('イベント枠一覧取得エラー:', error);
     throw error;
@@ -866,16 +839,18 @@ export async function updateEventSlot(
     facilityPhone?: string | null;
     eventSlotDetail?: string | null;
     photographerId?: string | null;
-    basePrice?: number | null;
+    basePrice?: string | null;
     eventSlotStatus?: '準備中' | '公開中' | '終了' | 'キャンセル';
   }
 ) {
   try {
-    const [updatedEventSlot] = await db
+    const dbInstance = checkDb();
+    
+    const [updatedEventSlot] = await dbInstance
       .update(eventSlotTbl)
       .set({
         ...data,
-        updatedAt: new Date().toISOString(),
+        updatedAt: new Date(),
       })
       .where(eq(eventSlotTbl.eventSlotId, eventSlotId))
       .returning();

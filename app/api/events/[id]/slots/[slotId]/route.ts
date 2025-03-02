@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import * as eventQueries from '@/src/db/queries';
+import * as queries from '@/src/db/queries';
 
 /**
  * GET /api/events/[id]/slots/[slotId]
@@ -36,7 +36,7 @@ export async function GET(
     }
     
     // イベントを取得して主催者かどうかを確認
-    const event = await eventQueries.getEventById(eventId);
+    const event = await queries.eventQueries.getEventById(eventId);
     
     if (!event) {
       return NextResponse.json(
@@ -46,7 +46,7 @@ export async function GET(
     }
     
     // イベント枠を取得
-    const eventSlot = await eventQueries.getEventSlotById(eventSlotId);
+    const eventSlot = await queries.eventQueries.getEventSlotById(eventSlotId);
     
     if (!eventSlot) {
       return NextResponse.json(
@@ -119,7 +119,7 @@ export async function PUT(
     }
     
     // イベントを取得して主催者かどうかを確認
-    const event = await eventQueries.getEventById(eventId);
+    const event = await queries.eventQueries.getEventById(eventId);
     
     if (!event) {
       return NextResponse.json(
@@ -129,7 +129,7 @@ export async function PUT(
     }
     
     // イベント枠を取得
-    const eventSlot = await eventQueries.getEventSlotById(eventSlotId);
+    const eventSlot = await queries.eventQueries.getEventSlotById(eventSlotId);
     
     if (!eventSlot) {
       return NextResponse.json(
@@ -147,7 +147,7 @@ export async function PUT(
     }
     
     // イベント枠を更新
-    const updatedEventSlot = await eventQueries.updateEventSlot(eventSlotId, {
+    const updatedEventSlot = await queries.eventQueries.updateEventSlot(eventSlotId, {
       eventSlotName: body.eventSlotName,
       eventDate: body.eventDate,
       eventTime: body.eventTime,
@@ -205,7 +205,7 @@ export async function DELETE(
     }
     
     // イベントを取得して主催者かどうかを確認
-    const event = await eventQueries.getEventById(eventId);
+    const event = await queries.eventQueries.getEventById(eventId);
     
     if (!event) {
       return NextResponse.json(
@@ -215,7 +215,7 @@ export async function DELETE(
     }
     
     // イベント枠を取得
-    const eventSlot = await eventQueries.getEventSlotById(eventSlotId);
+    const eventSlot = await queries.eventQueries.getEventSlotById(eventSlotId);
     
     if (!eventSlot) {
       return NextResponse.json(
@@ -233,7 +233,7 @@ export async function DELETE(
     }
     
     // イベント枠を削除（ステータスをキャンセルに変更）
-    await eventQueries.updateEventSlot(eventSlotId, {
+    await queries.eventQueries.updateEventSlot(eventSlotId, {
       eventSlotStatus: 'キャンセル',
     });
     
