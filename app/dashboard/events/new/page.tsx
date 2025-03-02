@@ -10,11 +10,11 @@ export default function NewEventPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [formData, setFormData] = useState({
-    title: '',
+    eventName: '',
     description: '',
     date: '',
     location: '',
-    status: 'active' as 'active' | 'completed' | 'cancelled',
+    eventStatus: '準備中' as '準備中' | '公開中' | '終了' | 'キャンセル',
   })
 
   // フォーム入力の変更を処理
@@ -36,7 +36,7 @@ export default function NewEventPage() {
 
     try {
       // バリデーション
-      if (!formData.title.trim()) {
+      if (!formData.eventName.trim()) {
         throw new Error('イベント名は必須です')
       }
       if (!formData.date) {
@@ -55,23 +55,21 @@ export default function NewEventPage() {
         throw new Error('ユーザー情報が取得できませんでした')
       }
       
-      // イベントデータを作成
-      const { data, error: insertError } = await supabase
-        .from('events')
-        .insert([
-          {
-            title: formData.title,
-            description: formData.description,
-            date: formData.date,
-            location: formData.location,
-            status: formData.status,
-            organizer_id: user.id,
-          },
-        ])
-        .select()
+      // APIを経由してイベントを作成
+      const response = await fetch('/api/events', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          eventName: formData.eventName,
+          eventStatus: formData.eventStatus,
+          eventRole: 'オーガナイザー',
+        }),
+      })
       
-      if (insertError) {
-        throw insertError
+      if (!response.ok) {
+        throw new Error(`イベント作成エラー: ${response.status}`)
       }
       
       // 成功したらイベント一覧ページにリダイレクト
@@ -103,14 +101,14 @@ export default function NewEventPage() {
       <div className="rounded-lg border border-gray-200 bg-white p-6">
         <form onSubmit={handleSubmit}>
           <div className="mb-6">
-            <label htmlFor="title" className="mb-2 block text-sm font-medium text-gray-700">
+            <label htmlFor="eventName" className="mb-2 block text-sm font-medium text-gray-700">
               イベント名 <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
-              id="title"
-              name="title"
-              value={formData.title}
+              id="eventName"
+              name="eventName"
+              value={formData.eventName}
               onChange={handleChange}
               className="block w-full rounded-md border-gray-300 shadow-sm focus:border-milab-500 focus:ring-milab-500 sm:text-sm"
               placeholder="例: 保育園夏祭り"
@@ -167,19 +165,20 @@ export default function NewEventPage() {
           </div>
 
           <div className="mb-6">
-            <label htmlFor="status" className="mb-2 block text-sm font-medium text-gray-700">
+            <label htmlFor="eventStatus" className="mb-2 block text-sm font-medium text-gray-700">
               ステータス
             </label>
             <select
-              id="status"
-              name="status"
-              value={formData.status}
+              id="eventStatus"
+              name="eventStatus"
+              value={formData.eventStatus}
               onChange={handleChange}
               className="block w-full rounded-md border-gray-300 shadow-sm focus:border-milab-500 focus:ring-milab-500 sm:text-sm"
             >
-              <option value="active">開催中</option>
-              <option value="completed">終了</option>
-              <option value="cancelled">中止</option>
+              <option value="準備中">準備中</option>
+              <option value="公開中">公開中</option>
+              <option value="終了">終了</option>
+              <option value="キャンセル">キャンセル</option>
             </select>
           </div>
 

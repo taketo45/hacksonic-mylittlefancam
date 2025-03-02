@@ -63,7 +63,7 @@ export const hostDetailTbl = pgTable('host_detail_tbl', {
 export const hostEventTbl = pgTable('host_event_tbl', {
   id: serial('id').primaryKey(),
   hostId: varchar('host_id', { length: 36 }).notNull().references(() => hostTbl.hostId),
-  eventId: varchar('event_id', { length: 36 }).notNull(),
+  eventId: varchar('event_id', { length: 36 }).notNull().references(() => eventTbl.eventId),
   eventRole: varchar('event_role', { length: 50 }),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),

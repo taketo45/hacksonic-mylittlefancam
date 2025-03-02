@@ -5,7 +5,7 @@ import { atomWithStorage } from 'jotai/utils'
 export type UserRole = 'organizer' | 'user'
 
 // ローカルストレージを使用してユーザーロールを保存するatom
-export const userRoleAtom = atomWithStorage<UserRole>('userRole', 'organizer')
+export const userRoleAtom = atomWithStorage<UserRole>('userRole', 'user')
 
 // ユーザーロールに応じたデフォルトページを返す関数
 export const getDefaultPageForRole = (role: UserRole): string => {

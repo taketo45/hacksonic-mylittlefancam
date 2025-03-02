@@ -30,6 +30,11 @@ export async function seedDatabase() {
   try {
     console.log('データベースシードを開始します...');
 
+    // データベース接続チェック
+    if (!db) {
+      throw new Error('データベース接続が初期化されていません');
+    }
+
     // 組織データの作成
     const organizationId = uuidv4();
     const [organization] = await db.insert(organizationMst).values({

@@ -15,12 +15,14 @@ function DashboardCard({
   icon,
   href,
   color = 'blue',
+  isNew = false,
 }: {
   title: string
   description: string
   icon: React.ReactNode
   href: string
-  color?: 'blue' | 'green' | 'purple' | 'orange'
+  color?: 'blue' | 'green' | 'purple' | 'orange' | 'red'
+  isNew?: boolean
 }) {
   // カラーバリエーション
   const colorVariants = {
@@ -28,13 +30,19 @@ function DashboardCard({
     green: 'bg-green-50 text-green-600',
     purple: 'bg-purple-50 text-purple-600',
     orange: 'bg-orange-50 text-orange-600',
+    red: 'bg-red-50 text-red-600',
   }
 
   return (
     <Link
       href={href}
-      className="block rounded-lg border border-gray-200 bg-white p-6 shadow-sm transition-all hover:shadow-md"
+      className="block rounded-lg border border-gray-200 bg-white p-6 shadow-sm transition-all hover:shadow-md relative"
     >
+      {isNew && (
+        <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full">
+          NEW
+        </span>
+      )}
       <div className="flex items-center space-x-4">
         <div className={`rounded-full p-3 ${colorVariants[color]}`}>{icon}</div>
         <div>
@@ -82,11 +90,54 @@ export default function DashboardPage() {
   return (
     <div className="p-6">
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">ダッシュボード</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-2xl font-bold text-gray-900">ダッシュボード</h1>
+          <span className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-3 py-1 rounded-full text-sm font-medium animate-pulse">
+            ハッカソンデモ
+          </span>
+        </div>
         <p className="mt-1 text-gray-600">
           こんにちは、{userName || 'ゲスト'}さん。SmileShareへようこそ！
         </p>
       </div>
+
+      {userRole === 'user' && (
+        // ハッカソン特別機能セクション（一般ユーザー向けのみ表示）
+        <div className="mb-8 bg-gradient-to-r from-purple-50 to-pink-50 p-4 rounded-lg border border-purple-100">
+          <h2 className="mb-4 text-xl font-semibold text-purple-800 flex items-center">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            ハッカソン特別機能
+          </h2>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <DashboardCard
+              title="顔認識・表情分析"
+              description="AIによる顔認識と表情分析で子供の笑顔を自動検出"
+              href="/dashboard/photos"
+              color="purple"
+              isNew={true}
+              icon={
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              }
+            />
+            <DashboardCard
+              title="SNS用マスキング"
+              description="SNSにアップロードしても安心な顔マスキング機能"
+              href="/dashboard/edit"
+              color="red"
+              isNew={true}
+              icon={
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                </svg>
+              }
+            />
+          </div>
+        </div>
+      )}
 
       <div className="mb-8">
         <h2 className="mb-4 text-xl font-semibold text-gray-800">クイックアクセス</h2>
@@ -254,7 +305,7 @@ export default function DashboardPage() {
               />
               <DashboardCard
                 title="カート"
-                description="選択した写真を購入します"
+                description="購入したい写真をカートに追加します"
                 href="/dashboard/cart"
                 color="orange"
                 icon={
@@ -276,9 +327,9 @@ export default function DashboardPage() {
               />
               <DashboardCard
                 title="購入履歴"
-                description="過去の購入履歴を確認します"
+                description="購入した写真の履歴を確認します"
                 href="/dashboard/purchases"
-                color="blue"
+                color="orange"
                 icon={
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
@@ -301,14 +352,53 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div className="mb-8">
-        <h2 className="mb-4 text-xl font-semibold text-gray-800">最近のアクティビティ</h2>
-        <div className="rounded-lg border border-gray-200 bg-white p-4">
-          <p className="text-center text-gray-500 py-8">
-            まだアクティビティはありません
-          </p>
+      {userRole === 'user' && (
+        // ハッカソン用ステータス表示（一般ユーザー向けのみ表示）
+        <div className="bg-white rounded-lg border border-gray-200 p-6 shadow-sm">
+          <h2 className="text-lg font-semibold text-gray-800 mb-4">ハッカソンデモステータス</h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-green-50 rounded-lg p-4 border border-green-100">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-500">顔認識精度</p>
+                  <p className="text-2xl font-bold text-green-600">98.5%</p>
+                </div>
+                <div className="bg-green-100 p-3 rounded-full">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div className="bg-blue-50 rounded-lg p-4 border border-blue-100">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-500">表情分析処理数</p>
+                  <p className="text-2xl font-bold text-blue-600">1,254枚</p>
+                </div>
+                <div className="bg-blue-100 p-3 rounded-full">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <div className="bg-purple-50 rounded-lg p-4 border border-purple-100">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm text-gray-500">笑顔スコア平均</p>
+                  <p className="text-2xl font-bold text-purple-600">87.3点</p>
+                </div>
+                <div className="bg-purple-100 p-3 rounded-full">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.828 14.828a4 4 0 01-5.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 } 
