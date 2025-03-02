@@ -1,115 +1,66 @@
-import { createServerClient } from '@supabase/ssr'
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { cookies } from 'next/headers'
 
-export function createClient() {
-  // 環境変数が存在しない場合のフォールバック値を設定
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder-url.supabase.co'
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
+/**
+ * Supabaseクライアントを作成する関数
+ * 
+ * @param {boolean} useServiceRole - サービスロールキーを使用するかどうか
+ * @returns {ReturnType<typeof createSupabaseClient>} Supabaseクライアント
+ */
+export function createClient(useServiceRole = false) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
   
-  // CI環境判定を変更 - Vercel環境では常に実際のクライアントを使用する
-  if (process.env.NODE_ENV === 'production' && process.env.CI && !process.env.VERCEL) {
-    // CIビルド時は実際のクライアント作成をスキップ
-    // @ts-ignore - ビルド時のみのダミー実装
-    return {
-      auth: {
-        getSession: () => Promise.resolve({ data: { session: null }, error: null }),
-        getUser: () => Promise.resolve({ data: { user: null }, error: null }),
-        signOut: () => Promise.resolve({ error: null }),
-        signInWithOAuth: () => Promise.resolve({ error: null }),
-        // @ts-ignore - ビルド時のみのダミー実装
-        signInWithPassword: (credentials: { email: string; password: string }) => 
-          Promise.resolve({ data: { user: null, session: null }, error: null }),
-        // @ts-ignore - ビルド時のみのダミー実装
-        signUp: (credentials: { email: string; password: string; options?: any }) => 
-          Promise.resolve({ data: { user: null, session: null }, error: null }),
-      },
-      // データベース操作用のメソッドをダミー実装
-      from: (table: string) => {
-        // 共通のダミーレスポンス生成関数
-        const dummyResponse = <T>(data: T | null = null) => Promise.resolve({ data, error: null });
-        // 配列を返すダミーレスポンス
-        const dummyArrayResponse = () => Promise.resolve({ 
-          data: [{ id: 'dummy-id', created_at: new Date().toISOString() }], 
-          error: null 
-        });
-        
-        return {
-          select: (columns: string = '*') => ({
-            eq: (column: string, value: unknown) => ({
-              single: () => dummyResponse({ id: 'dummy-id', created_at: new Date().toISOString() }),
-              maybeSingle: () => dummyResponse({ id: 'dummy-id', created_at: new Date().toISOString() }),
-              limit: (limit: number) => dummyArrayResponse(),
-              order: (column: string, options: unknown) => ({
-                limit: (limit: number) => dummyArrayResponse()
-              }),
-              data: [{ id: 'dummy-id', created_at: new Date().toISOString() }],
-              error: null,
-              then: (callback: (result: { data: unknown[]; error: null }) => unknown) => 
-                Promise.resolve({ 
-                  data: [{ id: 'dummy-id', created_at: new Date().toISOString() }], 
-                  error: null 
-                }).then(callback)
-            }),
-            order: (column: string, options: unknown) => ({
-              limit: (limit: number) => dummyArrayResponse()
-            }),
-            limit: (limit: number) => dummyArrayResponse(),
-            in: (column: string, values: unknown[]) => ({
-              order: (column: string, options: unknown) => ({
-                limit: (limit: number) => dummyArrayResponse()
-              }),
-              limit: (limit: number) => dummyArrayResponse()
-            }),
-            single: () => dummyResponse({ id: 'dummy-id', created_at: new Date().toISOString() }),
-            maybeSingle: () => dummyResponse({ id: 'dummy-id', created_at: new Date().toISOString() }),
-          }),
-          insert: (data: unknown) => ({
-            select: (columns: string = '*') => dummyArrayResponse(),
-            returning: (columns: string = '*') => dummyArrayResponse(),
-          }),
-          update: (data: unknown) => ({
-            eq: (column: string, value: unknown) => ({
-              select: (columns: string = '*') => dummyArrayResponse(),
-              match: (query: unknown) => dummyArrayResponse(),
-            }),
-            match: (query: unknown) => dummyArrayResponse(),
-          }),
-          delete: () => ({
-            eq: (column: string, value: unknown) => dummyResponse(null),
-            match: (query: unknown) => dummyResponse(null),
-          }),
-        }
-      },
-      storage: {
-        from: (bucket: string) => ({
-          upload: (path: string, file: unknown, options?: unknown) => 
-            Promise.resolve({ data: { path: `${bucket}/${path}` }, error: null }),
-          getPublicUrl: (path: string) => ({ data: { publicUrl: `https://dummy-url.com/${bucket}/${path}` } }),
-          list: (prefix: string) => Promise.resolve({ data: [], error: null }),
-          remove: (paths: string[]) => Promise.resolve({ data: null, error: null }),
-        }),
-      },
-      rpc: (fn: string, params?: unknown) => Promise.resolve({ data: null, error: null }),
-    }
-  }
+  // ハッカソンMVP用に一時的にサービスロールキーを使用
+  // 本番環境では絶対に使用しないでください
+  const supabaseKey = useServiceRole 
+    ? process.env.SUPABASE_SERVICE_ROLE_KEY || ''
+    : process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
   
+  return createSupabaseClient(supabaseUrl, supabaseKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false,
+    },
+  })
+}
+
+/**
+ * Cookieを使用してSupabaseクライアントを作成する関数
+ * 
+ * @returns {ReturnType<typeof createSupabaseClient>} Supabaseクライアント
+ */
+export function createClientWithCookies() {
   const cookieStore = cookies()
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
   
-  return createServerClient(
-    supabaseUrl,
-    supabaseKey,
+  // 最新のSupabaseクライアントでは、cookiesプロパティの代わりにglobal.fetchを使用
+  return createSupabaseClient(
+    supabaseUrl, 
+    supabaseKey, 
     {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value
-        },
-        set(name: string, value: string, options: any) {
-          cookieStore.set({ name, value, ...options })
-        },
-        remove(name: string, options: any) {
-          cookieStore.set({ name, value: '', ...options })
-        },
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
       },
+      global: {
+        fetch: (url, init) => {
+          // Cookieをリクエストに含める
+          const cookieHeader = cookieStore.getAll()
+            .map(cookie => `${cookie.name}=${cookie.value}`)
+            .join('; ');
+          
+          init = init || {};
+          init.headers = {
+            ...init.headers,
+            Cookie: cookieHeader,
+          };
+          
+          return fetch(url, init);
+        }
+      }
     }
   )
 } 
