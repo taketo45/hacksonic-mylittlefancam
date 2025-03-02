@@ -248,12 +248,20 @@ export const eventQueries = {
    */
   getEventsByHostId: async (hostId: string) => {
     const dbInstance = checkDb();
-    return await dbInstance.query.hostEventTbl.findMany({
+    // hostEventTblを経由してイベントを取得
+    const hostEvents = await dbInstance.query.hostEventTbl.findMany({
       where: eq(hostEventTbl.hostId, hostId),
       with: {
-        event: true,
+        event: {
+          with: {
+            eventSlots: true,
+          },
+        },
       },
     });
+
+    // 結果を整形して返す
+    return hostEvents.map(he => he.event);
   },
 
   /**

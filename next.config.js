@@ -2,7 +2,7 @@
 const nextConfig = {
   // 画像の最適化に関する警告を抑制
   images: {
-    unoptimized: process.env.CI === 'true',
+    unoptimized: process.env.VERCEL === '1' ? false : (process.env.CI === 'true'),
     domains: [
       'source.unsplash.com',
       'images.unsplash.com',
@@ -17,6 +17,7 @@ const nextConfig = {
   env: {
     NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder-url.supabase.co',
     NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key',
+    EFFECTIVE_CI: process.env.VERCEL === '1' ? 'false' : process.env.CI,
   },
 }
 

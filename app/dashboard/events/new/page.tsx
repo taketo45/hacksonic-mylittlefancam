@@ -1,204 +1,151 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
-import Link from 'next/link'
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Loader2 } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
 
 export default function NewEventPage() {
-  const router = useRouter()
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const router = useRouter();
+  const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
-    eventName: '',
-    description: '',
-    date: '',
-    location: '',
-    eventStatus: '準備中' as '準備中' | '公開中' | '終了' | 'キャンセル',
-  })
+    eventName: "",
+    eventStatus: "準備中" as "準備中" | "公開中" | "終了" | "キャンセル",
+  });
 
-  // フォーム入力の変更を処理
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
-  ) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({
-      ...prev,
+  // 入力変更ハンドラ
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setFormData({
+      ...formData,
       [name]: value,
-    }))
-  }
+    });
+  };
 
-  // フォーム送信を処理
+  // ステータス選択ハンドラ
+  const handleStatusChange = (value: string) => {
+    setFormData({
+      ...formData,
+      eventStatus: value as "準備中" | "公開中" | "終了" | "キャンセル",
+    });
+  };
+
+  // フォーム送信ハンドラ
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsSubmitting(true)
-    setError(null)
-
+    e.preventDefault();
+    
+    if (!formData.eventName.trim()) {
+      toast({
+        title: "エラー",
+        description: "イベント名を入力してください",
+        variant: "destructive",
+      });
+      return;
+    }
+    
     try {
-      // バリデーション
-      if (!formData.eventName.trim()) {
-        throw new Error('イベント名は必須です')
-      }
-      if (!formData.date) {
-        throw new Error('開催日は必須です')
-      }
-      if (!formData.location.trim()) {
-        throw new Error('開催場所は必須です')
-      }
-
-      const supabase = createClient()
+      setIsSubmitting(true);
       
-      // ユーザー情報を取得
-      const { data: { user } } = await supabase.auth.getUser()
-      
-      if (!user) {
-        throw new Error('ユーザー情報が取得できませんでした')
-      }
-      
-      // APIを経由してイベントを作成
+      // APIを使用してイベントを作成
       const response = await fetch('/api/events', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          eventName: formData.eventName,
-          eventStatus: formData.eventStatus,
-          eventRole: 'オーガナイザー',
-        }),
-      })
+        body: JSON.stringify(formData),
+      });
       
       if (!response.ok) {
-        throw new Error(`イベント作成エラー: ${response.status}`)
+        throw new Error("イベントの作成に失敗しました");
       }
       
-      // 成功したらイベント一覧ページにリダイレクト
-      router.push('/dashboard/events')
-      router.refresh()
+      const data = await response.json();
+      
+      toast({
+        title: "成功",
+        description: "イベントが作成されました",
+      });
+      
+      // 作成したイベントの詳細ページにリダイレクト
+      router.push(`/dashboard/events/${data.eventId}`);
     } catch (err) {
-      console.error('イベント作成エラー:', err)
-      setError(err instanceof Error ? err.message : 'イベントの作成中にエラーが発生しました')
+      console.error("Error creating event:", err);
+      toast({
+        title: "エラー",
+        description: err instanceof Error ? err.message : "不明なエラーが発生しました",
+        variant: "destructive",
+      });
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
+
+  // キャンセルボタンのハンドラ
+  const handleCancel = () => {
+    router.back();
+  };
 
   return (
-    <div className="p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">新規イベント作成</h1>
-        <p className="mt-1 text-gray-600">
-          新しいイベントの詳細を入力してください。
-        </p>
+    <div className="container mx-auto py-8">
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-3xl font-bold">新規イベント作成</h1>
+        <Button onClick={handleCancel} variant="outline">
+          キャンセル
+        </Button>
       </div>
 
-      {error && (
-        <div className="mb-6 rounded-lg bg-red-50 p-4 text-red-800">
-          <p>{error}</p>
-        </div>
-      )}
-
-      <div className="rounded-lg border border-gray-200 bg-white p-6">
-        <form onSubmit={handleSubmit}>
-          <div className="mb-6">
-            <label htmlFor="eventName" className="mb-2 block text-sm font-medium text-gray-700">
-              イベント名 <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
+      <Card className="p-6">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <Label htmlFor="eventName">イベント名</Label>
+            <Input
               id="eventName"
               name="eventName"
               value={formData.eventName}
-              onChange={handleChange}
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-milab-500 focus:ring-milab-500 sm:text-sm"
-              placeholder="例: 保育園夏祭り"
+              onChange={handleInputChange}
+              placeholder="イベント名を入力"
               required
             />
           </div>
-
-          <div className="mb-6">
-            <label htmlFor="description" className="mb-2 block text-sm font-medium text-gray-700">
-              イベント説明
-            </label>
-            <textarea
-              id="description"
-              name="description"
-              value={formData.description}
-              onChange={handleChange}
-              rows={3}
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-milab-500 focus:ring-milab-500 sm:text-sm"
-              placeholder="イベントの詳細説明を入力してください"
-            />
-          </div>
-
-          <div className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2">
-            <div>
-              <label htmlFor="date" className="mb-2 block text-sm font-medium text-gray-700">
-                開催日 <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="date"
-                id="date"
-                name="date"
-                value={formData.date}
-                onChange={handleChange}
-                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-milab-500 focus:ring-milab-500 sm:text-sm"
-                required
-              />
-            </div>
-
-            <div>
-              <label htmlFor="location" className="mb-2 block text-sm font-medium text-gray-700">
-                開催場所 <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="text"
-                id="location"
-                name="location"
-                value={formData.location}
-                onChange={handleChange}
-                className="block w-full rounded-md border-gray-300 shadow-sm focus:border-milab-500 focus:ring-milab-500 sm:text-sm"
-                placeholder="例: ○○保育園"
-                required
-              />
-            </div>
-          </div>
-
-          <div className="mb-6">
-            <label htmlFor="eventStatus" className="mb-2 block text-sm font-medium text-gray-700">
-              ステータス
-            </label>
-            <select
-              id="eventStatus"
-              name="eventStatus"
+          
+          <div>
+            <Label htmlFor="eventStatus">ステータス</Label>
+            <Select
               value={formData.eventStatus}
-              onChange={handleChange}
-              className="block w-full rounded-md border-gray-300 shadow-sm focus:border-milab-500 focus:ring-milab-500 sm:text-sm"
+              onValueChange={handleStatusChange}
             >
-              <option value="準備中">準備中</option>
-              <option value="公開中">公開中</option>
-              <option value="終了">終了</option>
-              <option value="キャンセル">キャンセル</option>
-            </select>
+              <SelectTrigger id="eventStatus">
+                <SelectValue placeholder="ステータスを選択" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="準備中">準備中</SelectItem>
+                <SelectItem value="公開中">公開中</SelectItem>
+                <SelectItem value="終了">終了</SelectItem>
+                <SelectItem value="キャンセル">キャンセル</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-
-          <div className="flex justify-end space-x-3">
-            <Link
-              href="/dashboard/events"
-              className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-milab-500 focus:ring-offset-2"
-            >
-              キャンセル
-            </Link>
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="rounded-md bg-milab-600 px-4 py-2 text-sm font-medium text-white hover:bg-milab-700 focus:outline-none focus:ring-2 focus:ring-milab-500 focus:ring-offset-2 disabled:opacity-50"
-            >
-              {isSubmitting ? '作成中...' : 'イベントを作成'}
-            </button>
+          
+          <div className="pt-4 flex justify-end">
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              イベントを作成
+            </Button>
           </div>
         </form>
-      </div>
+      </Card>
     </div>
-  )
+  );
 } 
