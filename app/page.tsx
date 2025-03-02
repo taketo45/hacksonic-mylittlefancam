@@ -4,8 +4,20 @@ import TestimonialCard from '@/components/testimonial-card'
 import PricingCard from '@/components/pricing-card'
 import FeatureCard from '@/components/feature-card'
 import HowItWorksStep from '@/components/how-it-works-step'
+import { createClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
 
-export default function Home() {
+export default async function Home() {
+  // セッションをチェックし、ログイン済みの場合はダッシュボードにリダイレクト
+  // ミドルウェアでも同様のチェックを行っているが、念のため
+  const supabase = createClient()
+  const { data: { session } } = await supabase.auth.getSession()
+  
+  if (session) {
+    console.log('Root page - Session exists, redirecting to dashboard');
+    redirect('/dashboard')
+  }
+
   return (
     <div className="flex min-h-screen flex-col bg-gradient">
       {/* ナビゲーションバー */}
@@ -389,3 +401,6 @@ export default function Home() {
     </div>
   )
 }
+
+// このページを動的レンダリングに設定
+export const dynamic = 'force-dynamic'

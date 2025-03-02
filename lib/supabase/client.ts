@@ -5,6 +5,16 @@ export function createClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder-url.supabase.co'
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
   
+  // 環境変数が設定されているか確認（クライアントサイドでのみ実行）
+  if (typeof window !== 'undefined') {
+    if (!process.env.NEXT_PUBLIC_SUPABASE_URL) {
+      console.error('NEXT_PUBLIC_SUPABASE_URL is not set in client');
+    }
+    if (!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+      console.error('NEXT_PUBLIC_SUPABASE_ANON_KEY is not set in client');
+    }
+  }
+  
   // ビルド時のみの処理（静的生成時）
   if (typeof window === 'undefined' && process.env.NODE_ENV === 'production' && process.env.CI) {
     // CIビルド時は実際のクライアント作成をスキップ
@@ -91,6 +101,11 @@ export function createClient() {
       },
       rpc: (fn: string, params?: unknown) => Promise.resolve({ data: null, error: null }),
     }
+  }
+  
+  // クライアントサイドでのデバッグ情報
+  if (typeof window !== 'undefined') {
+    console.log('Creating browser client with URL:', supabaseUrl === 'https://placeholder-url.supabase.co' ? 'Using placeholder' : 'Set');
   }
   
   return createBrowserClient(
