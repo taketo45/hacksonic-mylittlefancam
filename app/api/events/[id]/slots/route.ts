@@ -1,59 +1,56 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { eventQueries } from '@/src/db/queries';
 import { createClient } from '@/lib/supabase/server';
+import * as eventQueries from '@/src/db/queries';
 
 /**
- * イベント枠一覧を取得するAPI
- * @param req リクエスト
- * @param params パラメータ
- * @returns レスポンス
+ * GET /api/events/[id]/slots
+ * イベントに紐づくイベント枠一覧を取得するAPI
  */
 export async function GET(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = params;
+    // イベントIDを取得
+    const eventId = params.id;
+    
+    if (!eventId) {
+      return NextResponse.json(
+        { error: 'イベントIDが必要です' },
+        { status: 400 }
+      );
+    }
     
     // Supabaseクライアントを作成
     const supabase = createClient();
     
-    // ユーザー情報を取得
-    const { data: { user } } = await supabase.auth.getUser();
+    // セッションを取得して認証チェック
+    const { data: { session } } = await supabase.auth.getSession();
     
-    if (!user) {
+    if (!session) {
       return NextResponse.json(
-        { error: 'ユーザーが認証されていません' },
+        { error: '認証されていません' },
         { status: 401 }
       );
     }
     
-    // イベントを取得
-    const event = await eventQueries.getEventById(id);
+    // イベントを取得して主催者かどうかを確認
+    const event = await eventQueries.getEventById(eventId);
     
     if (!event) {
       return NextResponse.json(
-        { error: 'イベントが見つかりませんでした' },
+        { error: 'イベントが見つかりません' },
         { status: 404 }
       );
     }
     
-    // ユーザーがイベントの主催者かチェック
-    const isOrganizer = event.hostEvents.some((he: { hostId: string }) => he.hostId === user.id);
-    
-    if (!isOrganizer) {
-      return NextResponse.json(
-        { error: 'このイベントにアクセスする権限がありません' },
-        { status: 403 }
-      );
-    }
-    
-    // イベント枠を取得
-    const eventSlots = await eventQueries.getEventSlotsByEventId(id);
+    // イベント枠一覧を取得
+    const eventSlots = await eventQueries.getEventSlotsByEventId(eventId);
     
     return NextResponse.json({ eventSlots });
   } catch (error) {
     console.error('イベント枠一覧取得エラー:', error);
+    
     return NextResponse.json(
       { error: 'イベント枠一覧の取得中にエラーが発生しました' },
       { status: 500 }
@@ -62,17 +59,23 @@ export async function GET(
 }
 
 /**
- * 新規イベント枠を作成するAPI
- * @param req リクエスト
- * @param params パラメータ
- * @returns レスポンス
+ * POST /api/events/[id]/slots
+ * イベント枠を作成するAPI
  */
 export async function POST(
   req: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = params;
+    // イベントIDを取得
+    const eventId = params.id;
+    
+    if (!eventId) {
+      return NextResponse.json(
+        { error: 'イベントIDが必要です' },
+        { status: 400 }
+      );
+    }
     
     // リクエストボディを取得
     const body = await req.json();
@@ -88,52 +91,45 @@ export async function POST(
     // Supabaseクライアントを作成
     const supabase = createClient();
     
-    // ユーザー情報を取得
-    const { data: { user } } = await supabase.auth.getUser();
+    // セッションを取得して認証チェック
+    const { data: { session } } = await supabase.auth.getSession();
     
-    if (!user) {
+    if (!session) {
       return NextResponse.json(
-        { error: 'ユーザーが認証されていません' },
+        { error: '認証されていません' },
         { status: 401 }
       );
     }
     
-    // イベントを取得
-    const event = await eventQueries.getEventById(id);
+    // イベントを取得して主催者かどうかを確認
+    const event = await eventQueries.getEventById(eventId);
     
     if (!event) {
       return NextResponse.json(
-        { error: 'イベントが見つかりませんでした' },
+        { error: 'イベントが見つかりません' },
         { status: 404 }
-      );
-    }
-    
-    // ユーザーがイベントの主催者かチェック
-    const isOrganizer = event.hostEvents.some((he: { hostId: string }) => he.hostId === user.id);
-    
-    if (!isOrganizer) {
-      return NextResponse.json(
-        { error: 'このイベントに枠を追加する権限がありません' },
-        { status: 403 }
       );
     }
     
     // イベント枠を作成
     const eventSlot = await eventQueries.createEventSlot({
-      eventId: id,
+      eventId,
       eventSlotName: body.eventSlotName,
       eventDate: body.eventDate,
       eventTime: body.eventTime,
-      facilityId: body.facilityId,
-      geoCode: body.geoCode,
+      facilityName: body.facilityName,
+      facilityAddress: body.facilityAddress,
+      facilityPhone: body.facilityPhone,
       eventSlotDetail: body.eventSlotDetail,
-      eventSlotStatus: body.eventSlotStatus,
-      ticketUrl: body.ticketUrl,
+      photographerId: body.photographerId,
+      basePrice: body.basePrice,
+      eventSlotStatus: body.eventSlotStatus || '準備中',
     });
     
     return NextResponse.json({ eventSlot }, { status: 201 });
   } catch (error) {
     console.error('イベント枠作成エラー:', error);
+    
     return NextResponse.json(
       { error: 'イベント枠の作成中にエラーが発生しました' },
       { status: 500 }

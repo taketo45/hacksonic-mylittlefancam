@@ -1,4 +1,4 @@
-import { pgTable, serial, varchar, text, boolean, timestamp, date, time, pgEnum } from 'drizzle-orm/pg-core';
+import { pgTable, serial, varchar, text, boolean, timestamp, date, time, pgEnum, uuid, numeric } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
 // 組織区分の列挙型
@@ -81,17 +81,19 @@ export const hostEventTbl = pgTable('host_event_tbl', {
 // イベント枠テーブル
 export const eventSlotTbl = pgTable('event_slot_tbl', {
   eventSlotId: varchar('event_slot_id', { length: 36 }).primaryKey(),
-  eventId: varchar('event_id', { length: 36 }).notNull().references(() => eventTbl.eventId),
-  eventSlotName: varchar('event_slot_name', { length: 100 }).notNull(),
-  eventDate: date('event_date'),
-  eventTime: time('event_time'),
-  facilityId: varchar('facility_id', { length: 36 }),
-  geoCode: varchar('geo_code', { length: 100 }),
+  eventId: varchar('event_id', { length: 36 }).notNull().references(() => eventTbl.eventId, { onDelete: 'cascade' }),
+  eventSlotName: text('event_slot_name').notNull(),
+  eventDate: text('event_date'),
+  eventTime: text('event_time'),
+  facilityName: text('facility_name'),
+  facilityAddress: text('facility_address'),
+  facilityPhone: text('facility_phone'),
   eventSlotDetail: text('event_slot_detail'),
-  eventSlotStatus: eventSlotStatusEnum('event_slot_status').default('準備中'),
-  ticketUrl: varchar('ticket_url', { length: 255 }),
-  createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
+  photographerId: varchar('photographer_id', { length: 36 }).references(() => hostTbl.hostId),
+  basePrice: numeric('base_price', { precision: 10, scale: 2 }),
+  eventSlotStatus: eventSlotStatusEnum('event_slot_status').default('準備中').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
 // 主催者とイベント枠の関連テーブル
@@ -323,14 +325,15 @@ export const hostEventRelations = relations(hostEventTbl, ({ one }) => ({
   }),
 }));
 
-export const eventSlotRelations = relations(eventSlotTbl, ({ many, one }) => ({
+export const eventSlotRelations = relations(eventSlotTbl, ({ one }) => ({
   event: one(eventTbl, {
     fields: [eventSlotTbl.eventId],
     references: [eventTbl.eventId],
   }),
-  hostEventSlots: many(hostEventSlotTbl),
-  userParticipations: many(userParticipationTbl),
-  photoShoots: many(photoShootTbl),
+  photographer: one(hostTbl, {
+    fields: [eventSlotTbl.photographerId],
+    references: [hostTbl.hostId],
+  }),
 }));
 
 // hostEventSlotTblのリレーション定義を追加

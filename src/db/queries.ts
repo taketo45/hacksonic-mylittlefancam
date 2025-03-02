@@ -263,20 +263,21 @@ export const eventQueries = {
    */
   getEventsByHostId: async (hostId: string) => {
     const dbInstance = checkDb();
-    // hostEventTblを経由してイベントを取得
-    const hostEvents = await dbInstance.query.hostEventTbl.findMany({
-      where: eq(hostEventTbl.hostId, hostId),
-      with: {
-        event: {
-          with: {
-            eventSlots: true,
-          },
+    try {
+      // hostEventTblを経由してイベントを取得
+      const hostEvents = await dbInstance.query.hostEventTbl.findMany({
+        where: eq(hostEventTbl.hostId, hostId),
+        with: {
+          event: true, // eventSlotsを含めない
         },
-      },
-    });
+      });
 
-    // 結果を整形して返す
-    return hostEvents.map(he => he.event);
+      // 結果を整形して返す
+      return hostEvents.map(he => he.event);
+    } catch (error) {
+      console.error('getEventsByHostId error:', error);
+      throw error;
+    }
   },
 
   /**
@@ -301,13 +302,15 @@ export const eventQueries = {
   createEventSlot: async (data: {
     eventId: string;
     eventSlotName: string;
-    eventDate?: string;
-    eventTime?: string;
-    facilityId?: string;
-    geoCode?: string;
-    eventSlotDetail?: string;
+    eventDate?: string | null;
+    eventTime?: string | null;
+    facilityName?: string | null;
+    facilityAddress?: string | null;
+    facilityPhone?: string | null;
+    eventSlotDetail?: string | null;
+    photographerId?: string | null;
+    basePrice?: number | null;
     eventSlotStatus?: '準備中' | '公開中' | '終了' | 'キャンセル';
-    ticketUrl?: string;
   }) => {
     const dbInstance = checkDb();
     const eventSlotId = uuidv4();
@@ -707,4 +710,184 @@ export const purchaseQueries = {
       .where(eq(printManagementTbl.id, id))
       .returning();
   },
-}; 
+};
+
+/**
+ * 主催者一覧を取得する
+ * @returns 主催者一覧
+ */
+export async function getHosts() {
+  try {
+    const hosts = await db.query.hostTbl.findMany({
+      columns: {
+        hostId: true,
+        name: true,
+        email: true,
+      },
+      where: eq(hostTbl.accountStatus, '有効'),
+    });
+    
+    return hosts;
+  } catch (error) {
+    console.error('主催者一覧取得エラー:', error);
+    throw error;
+  }
+}
+
+/**
+ * イベント枠を作成する
+ * @param data イベント枠データ
+ * @returns 作成されたイベント枠
+ */
+export async function createEventSlot(data: {
+  eventId: string;
+  eventSlotName: string;
+  eventDate?: string | null;
+  eventTime?: string | null;
+  facilityName?: string | null;
+  facilityAddress?: string | null;
+  facilityPhone?: string | null;
+  eventSlotDetail?: string | null;
+  photographerId?: string | null;
+  basePrice?: number | null;
+  eventSlotStatus?: '準備中' | '公開中' | '終了' | 'キャンセル';
+}) {
+  try {
+    const [eventSlot] = await db
+      .insert(eventSlotTbl)
+      .values({
+        eventId: data.eventId,
+        eventSlotName: data.eventSlotName,
+        eventDate: data.eventDate || null,
+        eventTime: data.eventTime || null,
+        facilityName: data.facilityName || null,
+        facilityAddress: data.facilityAddress || null,
+        facilityPhone: data.facilityPhone || null,
+        eventSlotDetail: data.eventSlotDetail || null,
+        photographerId: data.photographerId || null,
+        basePrice: data.basePrice || null,
+        eventSlotStatus: data.eventSlotStatus || '準備中',
+      })
+      .returning();
+
+    return eventSlot;
+  } catch (error) {
+    console.error('イベント枠作成エラー:', error);
+    throw error;
+  }
+}
+
+/**
+ * イベント枠をIDで取得する
+ * @param eventSlotId イベント枠ID
+ * @returns イベント枠
+ */
+export async function getEventSlotById(eventSlotId: string) {
+  try {
+    const eventSlot = await db.query.eventSlotTbl.findFirst({
+      where: eq(eventSlotTbl.eventSlotId, eventSlotId),
+      with: {
+        event: true,
+        photographer: {
+          columns: {
+            hostId: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    if (!eventSlot) {
+      return null;
+    }
+
+    // 撮影者の情報を含める
+    return {
+      ...eventSlot,
+      photographerName: eventSlot.photographer?.name,
+    };
+  } catch (error) {
+    console.error('イベント枠取得エラー:', error);
+    throw error;
+  }
+}
+
+/**
+ * イベントに紐づくイベント枠一覧を取得する
+ * @param eventId イベントID
+ * @returns イベント枠一覧
+ */
+export async function getEventSlotsByEventId(eventId: string) {
+  try {
+    const eventSlots = await db.query.eventSlotTbl.findMany({
+      where: eq(eventSlotTbl.eventId, eventId),
+      orderBy: [
+        asc(eventSlotTbl.eventDate),
+        asc(eventSlotTbl.eventTime),
+        asc(eventSlotTbl.eventSlotName),
+      ],
+      with: {
+        photographer: {
+          columns: {
+            hostId: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+
+    // 撮影者の情報を含める
+    return eventSlots.map(slot => ({
+      ...slot,
+      photographerName: slot.photographer?.name,
+    }));
+  } catch (error) {
+    console.error('イベント枠一覧取得エラー:', error);
+    throw error;
+  }
+}
+
+/**
+ * イベント枠を更新する
+ * @param eventSlotId イベント枠ID
+ * @param data 更新データ
+ * @returns 更新されたイベント枠
+ */
+export async function updateEventSlot(
+  eventSlotId: string,
+  data: {
+    eventSlotName?: string;
+    eventDate?: string | null;
+    eventTime?: string | null;
+    facilityName?: string | null;
+    facilityAddress?: string | null;
+    facilityPhone?: string | null;
+    eventSlotDetail?: string | null;
+    photographerId?: string | null;
+    basePrice?: number | null;
+    eventSlotStatus?: '準備中' | '公開中' | '終了' | 'キャンセル';
+  }
+) {
+  try {
+    const [updatedEventSlot] = await db
+      .update(eventSlotTbl)
+      .set({
+        ...data,
+        updatedAt: new Date().toISOString(),
+      })
+      .where(eq(eventSlotTbl.eventSlotId, eventSlotId))
+      .returning();
+
+    if (!updatedEventSlot) {
+      throw new Error('イベント枠の更新に失敗しました');
+    }
+
+    // 更新後のイベント枠を取得（撮影者情報を含む）
+    return getEventSlotById(eventSlotId);
+  } catch (error) {
+    console.error('イベント枠更新エラー:', error);
+    throw error;
+  }
+} 

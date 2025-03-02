@@ -6,8 +6,8 @@ export function createClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder-url.supabase.co'
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'
   
-  // ビルド時のみの処理（静的生成時）
-  if (process.env.NODE_ENV === 'production' && process.env.CI) {
+  // CI環境判定を変更 - Vercel環境では常に実際のクライアントを使用する
+  if (process.env.NODE_ENV === 'production' && process.env.CI && !process.env.VERCEL) {
     // CIビルド時は実際のクライアント作成をスキップ
     // @ts-ignore - ビルド時のみのダミー実装
     return {
