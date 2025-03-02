@@ -203,6 +203,21 @@ export const eventQueries = {
     const dbInstance = checkDb();
     const eventId = uuidv4();
     
+    // ホストが存在するか確認
+    const host = await dbInstance.query.hostTbl.findFirst({
+      where: eq(hostTbl.hostId, data.hostId),
+    });
+    
+    if (!host) {
+      // ホストが存在しない場合、ホストを作成
+      await dbInstance.insert(hostTbl).values({
+        hostId: data.hostId,
+        name: 'デフォルト名', // 仮の名前
+        email: `${data.hostId}@example.com`, // 仮のメールアドレス
+        password: 'password', // 仮のパスワード
+      });
+    }
+    
     // トランザクションを使用して、イベントとホスト-イベント関連を同時に作成
     return await dbInstance.transaction(async (tx) => {
       const event = await tx.insert(eventTbl).values({
