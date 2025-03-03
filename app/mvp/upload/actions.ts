@@ -2,7 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
-import { SAMPLE_USER_ID, SAMPLE_EVENT_ID, SAMPLE_EVENT_DATE, SAMPLE_EVENT_SLOT } from './page'
+import { SAMPLE_USER_ID, SAMPLE_EVENT_ID, SAMPLE_EVENT_DATE, SAMPLE_EVENT_SLOT } from './constants'
 
 /**
  * 写真をアップロードするサーバーアクション
