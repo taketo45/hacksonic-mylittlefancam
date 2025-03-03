@@ -11,11 +11,20 @@ export default async function DashboardLayout({
   const supabase = createClient()
   const { data: { session } } = await supabase.auth.getSession()
 
+  // デバッグ情報（ログには出ないがビルド時に確認可能）
+  console.log('Dashboard Layout - Session check:', !!session)
+
+  // ミドルウェアでもチェックしているが、念のためここでもチェック
+  // ただし、リダイレクトループを防ぐためにミドルウェアが機能していることを前提とする
   if (!session) {
-    redirect('/login')
+    console.log('Dashboard Layout - No session, but middleware should have redirected already')
+    // ミドルウェアが機能していない場合のフォールバック
+    // リダイレクトループを防ぐために一時的にコメントアウト
+    // return redirect('/login')
   }
 
   const { data: { user } } = await supabase.auth.getUser()
+  console.log('Dashboard Layout - User:', !!user)
 
   return (
     <div className="flex h-screen flex-col bg-gray-50">

@@ -4,8 +4,20 @@ import TestimonialCard from '@/components/testimonial-card'
 import PricingCard from '@/components/pricing-card'
 import FeatureCard from '@/components/feature-card'
 import HowItWorksStep from '@/components/how-it-works-step'
+import { createClient } from '@/lib/supabase/server'
+import { redirect } from 'next/navigation'
 
-export default function Home() {
+export default async function Home() {
+  // セッションをチェックし、ログイン済みの場合はダッシュボードにリダイレクト
+  // ミドルウェアでも同様のチェックを行っているが、念のため
+  const supabase = createClient()
+  const { data: { session } } = await supabase.auth.getSession()
+  
+  if (session) {
+    console.log('Root page - Session exists, redirecting to dashboard');
+    redirect('/dashboard')
+  }
+
   return (
     <div className="flex min-h-screen flex-col bg-gradient">
       {/* ナビゲーションバー */}
@@ -54,12 +66,12 @@ export default function Home() {
           <div className="container relative z-10 grid gap-12 px-4 md:grid-cols-2 md:items-center md:px-6">
             <div className="space-y-6 text-center md:text-left">
               <h1 className="text-4xl font-bold tracking-tighter sm:text-5xl md:text-6xl">
-                子どもたちの
+                推しとの
                 <span className="text-gradient">素敵な瞬間</span>
                 を永遠に
               </h1>
               <p className="text-lg text-gray-600 md:text-xl">
-                学校や保育園での特別な瞬間を逃さない。みんなで撮った写真から、あなたのお子さんのベストショットを見つけ、共有し、残しましょう。
+                推し活での特別な瞬間を逃さない。主催者が撮った写真から、あなたの推し活ベストショットを見つけ、共有し、残しましょう。
               </p>
               <div className="flex flex-col gap-4 sm:flex-row sm:justify-center md:justify-start">
                 <button className="inline-flex h-11 items-center justify-center rounded-md bg-milab-500 px-8 py-2 text-sm font-medium text-white transition-colors hover:bg-milab-600 focus:outline-none focus:ring-2 focus:ring-milab-400 focus:ring-offset-2">
@@ -94,12 +106,11 @@ export default function Home() {
           <div className="container px-4 md:px-6">
             <div className="mx-auto mb-16 max-w-2xl text-center">
               <h2 className="mb-4 text-3xl font-bold tracking-tight sm:text-4xl">
-                子どもたちの思い出を
+                推しとの思い出を
                 <span className="text-gradient">もっと素敵に</span>
               </h2>
               <p className="text-lg text-gray-600">
-                My Little
-                Fancamは、学校や保育園での子どもたちの特別な瞬間を、みんなで共有し、残すためのプラットフォームです。
+                Your Shutterは、推し活での特別な瞬間を、みんなで共有し、残すためのプラットフォームです。
               </p>
             </div>
             <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
@@ -145,7 +156,7 @@ export default function Home() {
                 <span className="text-gradient">簡単3ステップ</span>
                 で始められます
               </h2>
-              <p className="text-lg text-gray-600">My Little Fancamは、誰でも簡単に使えるように設計されています。</p>
+              <p className="text-lg text-gray-600">Your Shutterは、誰でも簡単に使えるように設計されています。</p>
             </div>
             <div className="grid gap-12 md:grid-cols-3">
               <HowItWorksStep
@@ -173,7 +184,7 @@ export default function Home() {
             <div className="grid gap-8 text-center md:grid-cols-4">
               <div>
                 <div className="text-4xl font-bold">1,000+</div>
-                <div className="mt-2">参加している学校・保育園</div>
+                <div className="mt-2">参加しているイベント</div>
               </div>
               <div>
                 <div className="text-4xl font-bold">10万+</div>
@@ -199,26 +210,26 @@ export default function Home() {
                 <span className="text-gradient">お客様の声</span>
               </h2>
               <p className="text-lg text-gray-600">
-                My Little Fancamを利用している保護者や学校の先生からの声をご紹介します。
+                Your Shutterを利用している推し活民のみなさまからの声をご紹介します。
               </p>
             </div>
             <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
               <TestimonialCard
                 name="佐藤 美咲"
-                role="保護者"
-                content="運動会で忙しくて子どもの写真を撮れなかったのですが、他のお母さんが撮った素敵な写真を購入できて本当に嬉しかったです。思い出が増えました！"
+                role="推し： SixTONES"
+                content="推しへ声援で忙しくて推し活の写真を撮れなかったのですが、イベントで撮られた素敵な写真を購入できて本当に嬉しかったです。思い出が増えました！"
                 avatar="/img/mylittlefancam.svg"
               />
               <TestimonialCard
                 name="田中 健太"
-                role="保護者"
-                content="子どもが活躍している瞬間を他の親御さんが撮ってくれていて、自分では絶対に撮れなかったアングルの写真が手に入りました。感謝しています。"
+                role="推し： AKB48"
+                content="推しが活躍している瞬間をしっかりと目に焼き付けながら、自分では絶対に撮れなかった推しと一緒の写真が手に入りました。感謝しています。"
                 avatar="/img/mylittlefancam.svg"
               />
               <TestimonialCard
                 name="山田 先生"
-                role="幼稚園教諭"
-                content="保護者同士の交流が増え、イベントの写真も充実するようになりました。先生としても子どもたちの成長を記録できて嬉しいです。"
+                role="推し： サザンオールスターズ"
+                content="推し推し推し。"
                 avatar="/img/mylittlefancam.svg"
               />
             </div>
@@ -389,3 +400,6 @@ export default function Home() {
     </div>
   )
 }
+
+// このページを動的レンダリングに設定
+export const dynamic = 'force-dynamic'

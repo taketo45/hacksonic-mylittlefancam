@@ -209,7 +209,7 @@ async function main() {
 
         // 3. Upload print file
         // const filePath = './keyboard-shortcuts-macos.pdf';
-        const filePath = './sample.jpg';
+        const filePath = './sample_photo.jpg';
         await uploadPrintFile(upload_uri, filePath);
 
         // 4. Execute print

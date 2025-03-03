@@ -65,6 +65,7 @@ erDiagram
         string eventSlotDetail "イベント枠詳細"
         string eventSlotStatus "イベント枠状態"
         string ticketUrl "チケット差込URL"
+        number basePrice "写真販売ベース価格"
     }
     
     FacilityMst ||--o{ SeatBlockTbl : "設置"
@@ -96,6 +97,7 @@ erDiagram
         string email "メール"
         string password "パスワード"
         string accountStatus "アカウント状態"
+        string faceImageUrl "顔画像URL"
     }
     
     User_ParticipationTbl ||--o{ EventSlotTbl : "参加"
@@ -139,6 +141,7 @@ erDiagram
         string eventSlotId "イベント枠ID"
         string photographerId "撮影者ID"
         string storageUrl "StorageURL"
+        string folderName "フォルダ名"
     }
     
     OriginalPhotoTbl ||--o{ PhotoShootTbl : "原本"
@@ -150,6 +153,9 @@ erDiagram
         string geoCode "GEOコード"
         datetime shootDateTime "撮影日時"
         boolean isNG "isNG"
+        json exifData "Exif情報"
+        number smileScore "笑顔スコア"
+        json detectedFaces "検出された顔情報"
     }
     
     EditedPhotoTbl ||--o{ OriginalPhotoTbl : "元画像"
@@ -159,6 +165,8 @@ erDiagram
         string storageUrl "StorageURL"
         datetime editDateTime "修正日時"
         string userPreference "ユーザー推し区分"
+        json faceMatchResults "顔一致結果"
+        json emotionResults "表情分析結果"
     }
     
     ProcessedPhotoTbl ||--o{ EditedPhotoTbl : "元画像"
@@ -175,12 +183,21 @@ erDiagram
         boolean isSold "isSold"
         boolean isDownloaded "isDownloaded"
         boolean isPrinted "isPrinted"
+        json maskingInfo "マスキング情報"
+        json snsSettings "SNSアップ用設定"
+        string thumbnailUrl "サムネイルURL"
+        number price "価格"
     }
     
     CartTbl ||--o{ ProcessedPhotoTbl : "商品"
     CartTbl {
         string processedPhotoId "加工PhotoID"
         string purchaseId "購買ID"
+        string userId "ユーザーID"
+        boolean printOption "印刷オプション"
+        string printSize "印刷サイズ"
+        number price "価格"
+        datetime addedAt "追加日時"
     }
     
     PurchaseTbl ||--o{ CartTbl : "注文"
@@ -199,6 +216,9 @@ erDiagram
         boolean isSold "isSold"
         boolean isDownloaded "isDownloaded"
         boolean isPrinted "isPrinted"
+        number totalAmount "合計金額"
+        string paymentStatus "支払い状態"
+        datetime purchaseDate "購入日時"
     }
     
     PrintManagementTbl ||--o{ PurchaseTbl : "印刷対象"
@@ -210,4 +230,16 @@ erDiagram
         string processedPhotoId "加工PhotoID"
         string processedPhotoUrl "加工写真URL"
         string status "Status"
+        string printSize "印刷サイズ"
+        datetime printRequestDate "印刷依頼日時"
+        datetime printCompletedDate "印刷完了日時"
+        string trackingNumber "追跡番号"
+    }
+    
+    PrintOptionMst {
+        string optionId "オプションID"
+        string optionName "オプション名"
+        string optionType "オプション種類"
+        number price "価格"
+        boolean isActive "有効フラグ"
     }

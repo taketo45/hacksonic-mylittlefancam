@@ -30,6 +30,11 @@ export async function seedDatabase() {
   try {
     console.log('データベースシードを開始します...');
 
+    // データベース接続チェック
+    if (!db) {
+      throw new Error('データベース接続が初期化されていません');
+    }
+
     // 組織データの作成
     const organizationId = uuidv4();
     const [organization] = await db.insert(organizationMst).values({
@@ -108,10 +113,11 @@ export async function seedDatabase() {
       eventSlotName: '午前の部',
       eventDate: '2023-04-15',
       eventTime: '10:00:00',
-      facilityId,
+      facilityName: facility.facilityName,
+      facilityAddress: '東京都渋谷区代々木1-1-1',
+      facilityPhone: '03-1234-5678',
       eventSlotDetail: '午前中は公園で遊びます',
       eventSlotStatus: '公開中',
-      ticketUrl: `https://example.com/events/${eventId}/slots/${eventSlotId}`,
     }).returning();
 
     console.log('イベント枠データを作成しました:', eventSlot.eventSlotName);

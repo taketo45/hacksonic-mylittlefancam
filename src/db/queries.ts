@@ -20,6 +20,20 @@ import {
 } from './schema';
 import { v4 as uuidv4 } from 'uuid';
 
+// サーバーサイドでのみ実行されるかチェックする関数
+const isServer = () => typeof window === 'undefined';
+
+// データベースが利用可能かチェックする関数
+const checkDb = () => {
+  if (!isServer()) {
+    throw new Error('データベース接続はサーバーサイドでのみ利用可能です');
+  }
+  if (!db) {
+    throw new Error('データベース接続が初期化されていません');
+  }
+  return db;
+};
+
 // 組織関連のクエリ
 export const organizationQueries = {
   /**
@@ -34,8 +48,9 @@ export const organizationQueries = {
     organizationType?: '保育園' | '幼稚園' | '小学校' | '中学校' | '高校' | 'その他';
     department?: string;
   }) => {
+    const dbInstance = checkDb();
     const organizationId = uuidv4();
-    return await db.insert(organizationMst).values({
+    return await dbInstance.insert(organizationMst).values({
       organizationId,
       ...data,
     }).returning();
@@ -47,7 +62,8 @@ export const organizationQueries = {
    * @returns 組織情報
    */
   getOrganizationById: async (organizationId: string) => {
-    return await db.query.organizationMst.findFirst({
+    const dbInstance = checkDb();
+    return await dbInstance.query.organizationMst.findFirst({
       where: eq(organizationMst.organizationId, organizationId),
     });
   },
@@ -58,7 +74,8 @@ export const organizationQueries = {
    * @returns 組織情報の配列
    */
   searchOrganizationsByName: async (name: string) => {
-    return await db.query.organizationMst.findMany({
+    const dbInstance = checkDb();
+    return await dbInstance.query.organizationMst.findMany({
       where: like(organizationMst.organizationName, `%${name}%`),
     });
   },
@@ -70,7 +87,8 @@ export const organizationQueries = {
    * @returns 更新された組織情報
    */
   updateOrganization: async (organizationId: string, data: Partial<typeof organizationMst.$inferInsert>) => {
-    return await db.update(organizationMst)
+    const dbInstance = checkDb();
+    return await dbInstance.update(organizationMst)
       .set({ ...data, updatedAt: new Date() })
       .where(eq(organizationMst.organizationId, organizationId))
       .returning();
@@ -90,8 +108,9 @@ export const hostQueries = {
     password: string;
     accountStatus?: '有効' | '無効' | '停止中' | '審査中';
   }) => {
+    const dbInstance = checkDb();
     const hostId = uuidv4();
-    return await db.insert(hostTbl).values({
+    return await dbInstance.insert(hostTbl).values({
       hostId,
       ...data,
     }).returning();
@@ -103,7 +122,8 @@ export const hostQueries = {
    * @returns 主催者情報
    */
   getHostById: async (hostId: string) => {
-    return await db.query.hostTbl.findFirst({
+    const dbInstance = checkDb();
+    return await dbInstance.query.hostTbl.findFirst({
       where: eq(hostTbl.hostId, hostId),
       with: {
         hostDetails: true,
@@ -117,7 +137,8 @@ export const hostQueries = {
    * @returns 主催者情報
    */
   getHostByEmail: async (email: string) => {
-    return await db.query.hostTbl.findFirst({
+    const dbInstance = checkDb();
+    return await dbInstance.query.hostTbl.findFirst({
       where: eq(hostTbl.email, email),
     });
   },
@@ -129,7 +150,8 @@ export const hostQueries = {
    * @returns 更新された主催者情報
    */
   updateHost: async (hostId: string, data: Partial<typeof hostTbl.$inferInsert>) => {
-    return await db.update(hostTbl)
+    const dbInstance = checkDb();
+    return await dbInstance.update(hostTbl)
       .set({ ...data, updatedAt: new Date() })
       .where(eq(hostTbl.hostId, hostId))
       .returning();
@@ -146,17 +168,18 @@ export const hostQueries = {
     phoneNumber?: string;
     organizationId?: string;
   }) => {
-    const existingDetail = await db.query.hostDetailTbl.findFirst({
+    const dbInstance = checkDb();
+    const existingDetail = await dbInstance.query.hostDetailTbl.findFirst({
       where: eq(hostDetailTbl.hostId, hostId),
     });
 
     if (existingDetail) {
-      return await db.update(hostDetailTbl)
+      return await dbInstance.update(hostDetailTbl)
         .set({ ...data, updatedAt: new Date() })
         .where(eq(hostDetailTbl.hostId, hostId))
         .returning();
     } else {
-      return await db.insert(hostDetailTbl).values({
+      return await dbInstance.insert(hostDetailTbl).values({
         hostId,
         ...data,
       }).returning();
@@ -177,10 +200,26 @@ export const eventQueries = {
     eventStatus?: '準備中' | '公開中' | '終了' | 'キャンセル';
     eventRole?: string;
   }) => {
+    const dbInstance = checkDb();
     const eventId = uuidv4();
     
+    // ホストが存在するか確認
+    const host = await dbInstance.query.hostTbl.findFirst({
+      where: eq(hostTbl.hostId, data.hostId),
+    });
+    
+    if (!host) {
+      // ホストが存在しない場合、ホストを作成
+      await dbInstance.insert(hostTbl).values({
+        hostId: data.hostId,
+        name: 'デフォルト名', // 仮の名前
+        email: `${data.hostId}@example.com`, // 仮のメールアドレス
+        password: 'password', // 仮のパスワード
+      });
+    }
+    
     // トランザクションを使用して、イベントとホスト-イベント関連を同時に作成
-    return await db.transaction(async (tx) => {
+    return await dbInstance.transaction(async (tx) => {
       const event = await tx.insert(eventTbl).values({
         eventId,
         eventName: data.eventName,
@@ -203,7 +242,8 @@ export const eventQueries = {
    * @returns イベント情報
    */
   getEventById: async (eventId: string) => {
-    return await db.query.eventTbl.findFirst({
+    const dbInstance = checkDb();
+    return await dbInstance.query.eventTbl.findFirst({
       where: eq(eventTbl.eventId, eventId),
       with: {
         eventSlots: true,
@@ -222,12 +262,22 @@ export const eventQueries = {
    * @returns イベント情報の配列
    */
   getEventsByHostId: async (hostId: string) => {
-    return await db.query.hostEventTbl.findMany({
-      where: eq(hostEventTbl.hostId, hostId),
-      with: {
-        event: true,
-      },
-    });
+    const dbInstance = checkDb();
+    try {
+      // hostEventTblを経由してイベントを取得
+      const hostEvents = await dbInstance.query.hostEventTbl.findMany({
+        where: eq(hostEventTbl.hostId, hostId),
+        with: {
+          event: true, // eventSlotsを含めない
+        },
+      });
+
+      // 結果を整形して返す
+      return hostEvents.map(he => he.event);
+    } catch (error) {
+      console.error('getEventsByHostId error:', error);
+      throw error;
+    }
   },
 
   /**
@@ -237,7 +287,8 @@ export const eventQueries = {
    * @returns 更新されたイベント情報
    */
   updateEvent: async (eventId: string, data: Partial<typeof eventTbl.$inferInsert>) => {
-    return await db.update(eventTbl)
+    const dbInstance = checkDb();
+    return await dbInstance.update(eventTbl)
       .set({ ...data, updatedAt: new Date() })
       .where(eq(eventTbl.eventId, eventId))
       .returning();
@@ -251,16 +302,19 @@ export const eventQueries = {
   createEventSlot: async (data: {
     eventId: string;
     eventSlotName: string;
-    eventDate?: string;
-    eventTime?: string;
-    facilityId?: string;
-    geoCode?: string;
-    eventSlotDetail?: string;
+    eventDate?: string | null;
+    eventTime?: string | null;
+    facilityName?: string | null;
+    facilityAddress?: string | null;
+    facilityPhone?: string | null;
+    eventSlotDetail?: string | null;
+    photographerId?: string | null;
+    basePrice?: string | null;
     eventSlotStatus?: '準備中' | '公開中' | '終了' | 'キャンセル';
-    ticketUrl?: string;
   }) => {
+    const dbInstance = checkDb();
     const eventSlotId = uuidv4();
-    return await db.insert(eventSlotTbl).values({
+    return await dbInstance.insert(eventSlotTbl).values({
       eventSlotId,
       ...data,
     }).returning();
@@ -272,22 +326,22 @@ export const eventQueries = {
    * @returns イベント枠情報
    */
   getEventSlotById: async (eventSlotId: string) => {
-    return await db.query.eventSlotTbl.findFirst({
+    const dbInstance = checkDb();
+    return await dbInstance.query.eventSlotTbl.findFirst({
       where: eq(eventSlotTbl.eventSlotId, eventSlotId),
-      with: {
-        event: true,
-      },
     });
   },
 
   /**
-   * イベントIDに関連するイベント枠を取得する
+   * イベントIDに紐づくイベント枠一覧を取得する
    * @param eventId イベントID
-   * @returns イベント枠情報の配列
+   * @returns イベント枠一覧
    */
   getEventSlotsByEventId: async (eventId: string) => {
-    return await db.query.eventSlotTbl.findMany({
+    const dbInstance = checkDb();
+    return await dbInstance.query.eventSlotTbl.findMany({
       where: eq(eventSlotTbl.eventId, eventId),
+      orderBy: [desc(eventSlotTbl.createdAt)],
     });
   },
 
@@ -298,7 +352,8 @@ export const eventQueries = {
    * @returns 更新されたイベント枠情報
    */
   updateEventSlot: async (eventSlotId: string, data: Partial<typeof eventSlotTbl.$inferInsert>) => {
-    return await db.update(eventSlotTbl)
+    const dbInstance = checkDb();
+    return await dbInstance.update(eventSlotTbl)
       .set({ ...data, updatedAt: new Date() })
       .where(eq(eventSlotTbl.eventSlotId, eventSlotId))
       .returning();
@@ -318,8 +373,9 @@ export const userQueries = {
     password: string;
     accountStatus?: '有効' | '無効' | '停止中' | '審査中';
   }) => {
+    const dbInstance = checkDb();
     const userId = uuidv4();
-    return await db.insert(userTbl).values({
+    return await dbInstance.insert(userTbl).values({
       userId,
       ...data,
     }).returning();
@@ -331,7 +387,8 @@ export const userQueries = {
    * @returns ユーザー情報
    */
   getUserById: async (userId: string) => {
-    return await db.query.userTbl.findFirst({
+    const dbInstance = checkDb();
+    return await dbInstance.query.userTbl.findFirst({
       where: eq(userTbl.userId, userId),
     });
   },
@@ -342,7 +399,8 @@ export const userQueries = {
    * @returns ユーザー情報
    */
   getUserByEmail: async (email: string) => {
-    return await db.query.userTbl.findFirst({
+    const dbInstance = checkDb();
+    return await dbInstance.query.userTbl.findFirst({
       where: eq(userTbl.email, email),
     });
   },
@@ -354,7 +412,8 @@ export const userQueries = {
    * @returns 更新されたユーザー情報
    */
   updateUser: async (userId: string, data: Partial<typeof userTbl.$inferInsert>) => {
-    return await db.update(userTbl)
+    const dbInstance = checkDb();
+    return await dbInstance.update(userTbl)
       .set({ ...data, updatedAt: new Date() })
       .where(eq(userTbl.userId, userId))
       .returning();
@@ -373,7 +432,8 @@ export const userQueries = {
     seatLineId?: string;
     seatRowId?: string;
   }) => {
-    return await db.insert(userParticipationTbl).values(data).returning();
+    const dbInstance = checkDb();
+    return await dbInstance.insert(userParticipationTbl).values(data).returning();
   },
 };
 
@@ -389,8 +449,9 @@ export const photoQueries = {
     photographerId?: string;
     storageUrl?: string;
   }) => {
+    const dbInstance = checkDb();
     const shootId = uuidv4();
-    return await db.insert(photoShootTbl).values({
+    return await dbInstance.insert(photoShootTbl).values({
       shootId,
       ...data,
     }).returning();
@@ -409,8 +470,9 @@ export const photoQueries = {
     shootDateTime?: Date;
     isNG?: boolean;
   }) => {
+    const dbInstance = checkDb();
     const originalPhotoId = uuidv4();
-    return await db.insert(originalPhotoTbl).values({
+    return await dbInstance.insert(originalPhotoTbl).values({
       originalPhotoId,
       ...data,
     }).returning();
@@ -427,8 +489,9 @@ export const photoQueries = {
     editDateTime?: Date;
     userPreference?: string;
   }) => {
+    const dbInstance = checkDb();
     const editedPhotoId = uuidv4();
-    return await db.insert(editedPhotoTbl).values({
+    return await dbInstance.insert(editedPhotoTbl).values({
       editedPhotoId,
       ...data,
     }).returning();
@@ -451,8 +514,9 @@ export const photoQueries = {
     isDownloaded?: boolean;
     isPrinted?: boolean;
   }) => {
+    const dbInstance = checkDb();
     const processedPhotoId = uuidv4();
-    return await db.insert(processedPhotoTbl).values({
+    return await dbInstance.insert(processedPhotoTbl).values({
       processedPhotoId,
       ...data,
     }).returning();
@@ -464,7 +528,8 @@ export const photoQueries = {
    * @returns 加工済み写真情報の配列
    */
   getProcessedPhotosByUserId: async (userId: string) => {
-    return await db.query.processedPhotoTbl.findMany({
+    const dbInstance = checkDb();
+    return await dbInstance.query.processedPhotoTbl.findMany({
       where: eq(processedPhotoTbl.userId, userId),
       with: {
         editedPhoto: {
@@ -482,7 +547,8 @@ export const photoQueries = {
    * @returns 加工済み写真情報の配列
    */
   getProcessedPhotosByEditedPhotoId: async (editedPhotoId: string) => {
-    return await db.query.processedPhotoTbl.findMany({
+    const dbInstance = checkDb();
+    return await dbInstance.query.processedPhotoTbl.findMany({
       where: eq(processedPhotoTbl.editedPhotoId, editedPhotoId),
     });
   },
@@ -494,7 +560,8 @@ export const photoQueries = {
    * @returns 更新された加工済み写真情報
    */
   updateProcessedPhoto: async (processedPhotoId: string, data: Partial<typeof processedPhotoTbl.$inferInsert>) => {
-    return await db.update(processedPhotoTbl)
+    const dbInstance = checkDb();
+    return await dbInstance.update(processedPhotoTbl)
       .set({ ...data, updatedAt: new Date() })
       .where(eq(processedPhotoTbl.processedPhotoId, processedPhotoId))
       .returning();
@@ -512,7 +579,8 @@ export const purchaseQueries = {
     userId: string;
     processedPhotoId: string;
   }) => {
-    return await db.insert(cartTbl).values(data).returning();
+    const dbInstance = checkDb();
+    return await dbInstance.insert(cartTbl).values(data).returning();
   },
 
   /**
@@ -521,7 +589,8 @@ export const purchaseQueries = {
    * @returns カート情報の配列
    */
   getCartByUserId: async (userId: string) => {
-    return await db.query.cartTbl.findMany({
+    const dbInstance = checkDb();
+    return await dbInstance.query.cartTbl.findMany({
       where: eq(cartTbl.userId, userId),
       with: {
         processedPhoto: {
@@ -543,7 +612,8 @@ export const purchaseQueries = {
    * @returns 削除結果
    */
   removeFromCart: async (id: number) => {
-    return await db.delete(cartTbl)
+    const dbInstance = checkDb();
+    return await dbInstance.delete(cartTbl)
       .where(eq(cartTbl.id, id))
       .returning();
   },
@@ -562,8 +632,9 @@ export const purchaseQueries = {
     paymentMethod?: string;
     paymentId?: string;
   }) => {
+    const dbInstance = checkDb();
     const purchaseId = uuidv4();
-    return await db.insert(purchaseTbl).values({
+    return await dbInstance.insert(purchaseTbl).values({
       purchaseId,
       ...data,
     }).returning();
@@ -575,7 +646,8 @@ export const purchaseQueries = {
    * @returns 購入情報
    */
   getPurchaseById: async (purchaseId: string) => {
-    return await db.query.purchaseTbl.findFirst({
+    const dbInstance = checkDb();
+    return await dbInstance.query.purchaseTbl.findFirst({
       where: eq(purchaseTbl.purchaseId, purchaseId),
       with: {
         user: true,
@@ -598,7 +670,8 @@ export const purchaseQueries = {
    * @returns 購入情報の配列
    */
   getPurchasesByUserId: async (userId: string) => {
-    return await db.query.purchaseTbl.findMany({
+    const dbInstance = checkDb();
+    return await dbInstance.query.purchaseTbl.findMany({
       where: eq(purchaseTbl.userId, userId),
       with: {
         processedPhoto: true,
@@ -618,7 +691,8 @@ export const purchaseQueries = {
     processedPhotoUrl?: string;
     status?: '準備中' | '印刷中' | '印刷完了' | '発送準備中' | '発送完了' | 'キャンセル' | 'エラー';
   }) => {
-    return await db.insert(printManagementTbl).values(data).returning();
+    const dbInstance = checkDb();
+    return await dbInstance.insert(printManagementTbl).values(data).returning();
   },
 
   /**
@@ -628,9 +702,167 @@ export const purchaseQueries = {
    * @returns 更新された印刷管理情報
    */
   updatePrintManagement: async (id: number, data: Partial<typeof printManagementTbl.$inferInsert>) => {
-    return await db.update(printManagementTbl)
+    const dbInstance = checkDb();
+    return await dbInstance.update(printManagementTbl)
       .set({ ...data, updatedAt: new Date() })
       .where(eq(printManagementTbl.id, id))
       .returning();
   },
-}; 
+};
+
+/**
+ * 主催者一覧を取得する
+ * @returns 主催者一覧
+ */
+export async function getHosts() {
+  try {
+    const dbInstance = checkDb();
+    
+    const hosts = await dbInstance.query.hostTbl.findMany({
+      columns: {
+        hostId: true,
+        name: true,
+        email: true,
+      },
+      where: eq(hostTbl.accountStatus, '有効'),
+    });
+    
+    return hosts;
+  } catch (error) {
+    console.error('主催者一覧取得エラー:', error);
+    throw error;
+  }
+}
+
+/**
+ * イベント枠を作成する
+ * @param data イベント枠データ
+ * @returns 作成されたイベント枠
+ */
+export async function createEventSlot(data: {
+  eventId: string;
+  eventSlotName: string;
+  eventDate?: string | null;
+  eventTime?: string | null;
+  facilityName?: string | null;
+  facilityAddress?: string | null;
+  facilityPhone?: string | null;
+  eventSlotDetail?: string | null;
+  photographerId?: string | null;
+  basePrice?: string | null;
+  eventSlotStatus?: '準備中' | '公開中' | '終了' | 'キャンセル';
+}) {
+  try {
+    const dbInstance = checkDb();
+    const eventSlotId = uuidv4();
+    
+    const [eventSlot] = await dbInstance
+      .insert(eventSlotTbl)
+      .values({
+        eventSlotId,
+        eventId: data.eventId,
+        eventSlotName: data.eventSlotName,
+        eventDate: data.eventDate || null,
+        eventTime: data.eventTime || null,
+        facilityName: data.facilityName || null,
+        facilityAddress: data.facilityAddress || null,
+        facilityPhone: data.facilityPhone || null,
+        eventSlotDetail: data.eventSlotDetail || null,
+        photographerId: data.photographerId || null,
+        basePrice: data.basePrice || null,
+        eventSlotStatus: data.eventSlotStatus || '準備中',
+      })
+      .returning();
+
+    return eventSlot;
+  } catch (error) {
+    console.error('イベント枠作成エラー:', error);
+    throw error;
+  }
+}
+
+/**
+ * イベント枠IDでイベント枠を取得する
+ * @param eventSlotId イベント枠ID
+ * @returns イベント枠情報
+ */
+export async function getEventSlotById(eventSlotId: string) {
+  try {
+    const dbInstance = checkDb();
+    
+    const eventSlot = await dbInstance.query.eventSlotTbl.findFirst({
+      where: eq(eventSlotTbl.eventSlotId, eventSlotId),
+    });
+    
+    return eventSlot;
+  } catch (error) {
+    console.error('イベント枠取得エラー:', error);
+    throw error;
+  }
+}
+
+/**
+ * イベントIDに紐づくイベント枠一覧を取得する
+ * @param eventId イベントID
+ * @returns イベント枠一覧
+ */
+export async function getEventSlotsByEventId(eventId: string) {
+  try {
+    const dbInstance = checkDb();
+    
+    const eventSlots = await dbInstance.query.eventSlotTbl.findMany({
+      where: eq(eventSlotTbl.eventId, eventId),
+      orderBy: [desc(eventSlotTbl.createdAt)],
+    });
+    
+    return eventSlots;
+  } catch (error) {
+    console.error('イベント枠一覧取得エラー:', error);
+    throw error;
+  }
+}
+
+/**
+ * イベント枠を更新する
+ * @param eventSlotId イベント枠ID
+ * @param data 更新データ
+ * @returns 更新されたイベント枠
+ */
+export async function updateEventSlot(
+  eventSlotId: string,
+  data: {
+    eventSlotName?: string;
+    eventDate?: string | null;
+    eventTime?: string | null;
+    facilityName?: string | null;
+    facilityAddress?: string | null;
+    facilityPhone?: string | null;
+    eventSlotDetail?: string | null;
+    photographerId?: string | null;
+    basePrice?: string | null;
+    eventSlotStatus?: '準備中' | '公開中' | '終了' | 'キャンセル';
+  }
+) {
+  try {
+    const dbInstance = checkDb();
+    
+    const [updatedEventSlot] = await dbInstance
+      .update(eventSlotTbl)
+      .set({
+        ...data,
+        updatedAt: new Date(),
+      })
+      .where(eq(eventSlotTbl.eventSlotId, eventSlotId))
+      .returning();
+
+    if (!updatedEventSlot) {
+      throw new Error('イベント枠の更新に失敗しました');
+    }
+
+    // 更新後のイベント枠を取得（撮影者情報を含む）
+    return getEventSlotById(eventSlotId);
+  } catch (error) {
+    console.error('イベント枠更新エラー:', error);
+    throw error;
+  }
+} 

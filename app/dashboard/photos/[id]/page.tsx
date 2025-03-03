@@ -9,6 +9,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useRouter } from 'next/navigation'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Label } from '@/components/ui/label'
 
 // 写真の型定義
 interface Photo {
@@ -58,6 +60,7 @@ export default function PhotoDetailPage({ params }: { params: { id: string } }) 
   const [isInCart, setIsInCart] = useState(false)
   const [activeTab, setActiveTab] = useState('photo')
   const [showOriginal, setShowOriginal] = useState(false)
+  const [showOnlyWithFaces, setShowOnlyWithFaces] = useState(false)
 
   useEffect(() => {
     const fetchPhoto = async () => {
@@ -534,6 +537,17 @@ export default function PhotoDetailPage({ params }: { params: { id: string } }) 
               </CardContent>
             </Card>
           )}
+        </div>
+      </div>
+
+      <div className="mt-6">
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="show-only-faces"
+            checked={showOnlyWithFaces}
+            onCheckedChange={(checked) => setShowOnlyWithFaces(!!checked)}
+          />
+          <Label htmlFor="show-only-faces" className="text-sm">人物が写っている写真のみ表示</Label>
         </div>
       </div>
     </div>

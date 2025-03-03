@@ -1,4 +1,4 @@
-import { pgTable, serial, varchar, text, boolean, timestamp, date, time, pgEnum } from 'drizzle-orm/pg-core';
+import { pgTable, serial, varchar, text, boolean, timestamp, date, time, pgEnum, uuid, numeric } from 'drizzle-orm/pg-core';
 import { relations } from 'drizzle-orm';
 
 // 組織区分の列挙型
@@ -28,15 +28,6 @@ export const organizationMst = pgTable('organization_mst', {
   updatedAt: timestamp('updated_at').defaultNow(),
 });
 
-// 組織と主催者の関連テーブル
-export const organizationHostTbl = pgTable('organization_host_tbl', {
-  id: serial('id').primaryKey(),
-  organizationId: varchar('organization_id', { length: 36 }).notNull().references(() => organizationMst.organizationId),
-  hostId: varchar('host_id', { length: 36 }).notNull(),
-  createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
-});
-
 // 主催者テーブル
 export const hostTbl = pgTable('host_tbl', {
   hostId: varchar('host_id', { length: 36 }).primaryKey(),
@@ -44,6 +35,15 @@ export const hostTbl = pgTable('host_tbl', {
   email: varchar('email', { length: 255 }).notNull().unique(),
   password: varchar('password', { length: 255 }).notNull(),
   accountStatus: accountStatusEnum('account_status').default('審査中'),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+// 組織と主催者の関連テーブル
+export const organizationHostTbl = pgTable('organization_host_tbl', {
+  id: serial('id').primaryKey(),
+  organizationId: varchar('organization_id', { length: 36 }).notNull().references(() => organizationMst.organizationId),
+  hostId: varchar('host_id', { length: 36 }).notNull().references(() => hostTbl.hostId),
   createdAt: timestamp('created_at').defaultNow(),
   updatedAt: timestamp('updated_at').defaultNow(),
 });
@@ -59,16 +59,6 @@ export const hostDetailTbl = pgTable('host_detail_tbl', {
   updatedAt: timestamp('updated_at').defaultNow(),
 });
 
-// 主催者とイベントの関連テーブル
-export const hostEventTbl = pgTable('host_event_tbl', {
-  id: serial('id').primaryKey(),
-  hostId: varchar('host_id', { length: 36 }).notNull().references(() => hostTbl.hostId),
-  eventId: varchar('event_id', { length: 36 }).notNull(),
-  eventRole: varchar('event_role', { length: 50 }),
-  createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
-});
-
 // イベントテーブル
 export const eventTbl = pgTable('event_tbl', {
   eventId: varchar('event_id', { length: 36 }).primaryKey(),
@@ -78,20 +68,32 @@ export const eventTbl = pgTable('event_tbl', {
   updatedAt: timestamp('updated_at').defaultNow(),
 });
 
+// 主催者とイベントの関連テーブル - eventTblの後に定義
+export const hostEventTbl = pgTable('host_event_tbl', {
+  id: serial('id').primaryKey(),
+  hostId: varchar('host_id', { length: 36 }).notNull().references(() => hostTbl.hostId),
+  eventId: varchar('event_id', { length: 36 }).notNull().references(() => eventTbl.eventId),
+  eventRole: varchar('event_role', { length: 50 }),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
 // イベント枠テーブル
 export const eventSlotTbl = pgTable('event_slot_tbl', {
   eventSlotId: varchar('event_slot_id', { length: 36 }).primaryKey(),
-  eventId: varchar('event_id', { length: 36 }).notNull().references(() => eventTbl.eventId),
-  eventSlotName: varchar('event_slot_name', { length: 100 }).notNull(),
-  eventDate: date('event_date'),
-  eventTime: time('event_time'),
-  facilityId: varchar('facility_id', { length: 36 }),
-  geoCode: varchar('geo_code', { length: 100 }),
+  eventId: varchar('event_id', { length: 36 }).notNull().references(() => eventTbl.eventId, { onDelete: 'cascade' }),
+  eventSlotName: text('event_slot_name').notNull(),
+  eventDate: text('event_date'),
+  eventTime: text('event_time'),
+  facilityName: text('facility_name'),
+  facilityAddress: text('facility_address'),
+  facilityPhone: text('facility_phone'),
   eventSlotDetail: text('event_slot_detail'),
-  eventSlotStatus: eventSlotStatusEnum('event_slot_status').default('準備中'),
-  ticketUrl: varchar('ticket_url', { length: 255 }),
-  createdAt: timestamp('created_at').defaultNow(),
-  updatedAt: timestamp('updated_at').defaultNow(),
+  photographerId: varchar('photographer_id', { length: 36 }).references(() => hostTbl.hostId),
+  basePrice: numeric('base_price', { precision: 10, scale: 2 }),
+  eventSlotStatus: eventSlotStatusEnum('event_slot_status').default('準備中').notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+  updatedAt: timestamp('updated_at').defaultNow().notNull(),
 });
 
 // 主催者とイベント枠の関連テーブル
@@ -275,6 +277,18 @@ export const organizationRelations = relations(organizationMst, ({ many }) => ({
   organizationHosts: many(organizationHostTbl),
 }));
 
+// organizationHostTblのリレーション定義を追加
+export const organizationHostRelations = relations(organizationHostTbl, ({ one }) => ({
+  organization: one(organizationMst, {
+    fields: [organizationHostTbl.organizationId],
+    references: [organizationMst.organizationId],
+  }),
+  host: one(hostTbl, {
+    fields: [organizationHostTbl.hostId],
+    references: [hostTbl.hostId],
+  }),
+}));
+
 export const hostRelations = relations(hostTbl, ({ many, one }) => ({
   organizationHosts: many(organizationHostTbl),
   hostDetails: one(hostDetailTbl),
@@ -282,19 +296,56 @@ export const hostRelations = relations(hostTbl, ({ many, one }) => ({
   hostEventSlots: many(hostEventSlotTbl),
 }));
 
+// hostDetailTblのリレーション定義を追加
+export const hostDetailRelations = relations(hostDetailTbl, ({ one }) => ({
+  host: one(hostTbl, {
+    fields: [hostDetailTbl.hostId],
+    references: [hostTbl.hostId],
+  }),
+  organization: one(organizationMst, {
+    fields: [hostDetailTbl.organizationId],
+    references: [organizationMst.organizationId],
+  }),
+}));
+
 export const eventRelations = relations(eventTbl, ({ many }) => ({
   hostEvents: many(hostEventTbl),
   eventSlots: many(eventSlotTbl),
 }));
 
-export const eventSlotRelations = relations(eventSlotTbl, ({ many, one }) => ({
+// hostEventTblのリレーション定義を追加
+export const hostEventRelations = relations(hostEventTbl, ({ one }) => ({
+  host: one(hostTbl, {
+    fields: [hostEventTbl.hostId],
+    references: [hostTbl.hostId],
+  }),
+  event: one(eventTbl, {
+    fields: [hostEventTbl.eventId],
+    references: [eventTbl.eventId],
+  }),
+}));
+
+export const eventSlotRelations = relations(eventSlotTbl, ({ one }) => ({
   event: one(eventTbl, {
     fields: [eventSlotTbl.eventId],
     references: [eventTbl.eventId],
   }),
-  hostEventSlots: many(hostEventSlotTbl),
-  userParticipations: many(userParticipationTbl),
-  photoShoots: many(photoShootTbl),
+  photographer: one(hostTbl, {
+    fields: [eventSlotTbl.photographerId],
+    references: [hostTbl.hostId],
+  }),
+}));
+
+// hostEventSlotTblのリレーション定義を追加
+export const hostEventSlotRelations = relations(hostEventSlotTbl, ({ one }) => ({
+  host: one(hostTbl, {
+    fields: [hostEventSlotTbl.hostId],
+    references: [hostTbl.hostId],
+  }),
+  eventSlot: one(eventSlotTbl, {
+    fields: [hostEventSlotTbl.eventSlotId],
+    references: [eventSlotTbl.eventSlotId],
+  }),
 }));
 
 export const facilityRelations = relations(facilityMst, ({ many }) => ({

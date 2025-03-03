@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
 import Image from 'next/image'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Label } from '@/components/ui/label'
 
 // 写真の型定義
 interface Photo {
@@ -41,6 +43,7 @@ export default function OshiWipePage() {
   const [error, setError] = useState<string | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const [showOnlyWithFaces, setShowOnlyWithFaces] = useState(false)
 
   // 写真と推し写真の取得
   useEffect(() => {
@@ -374,6 +377,15 @@ export default function OshiWipePage() {
                     <p className="text-sm text-gray-600">撮影日: {formatDate(selectedOshiPhoto.takenAt)}</p>
                   </div>
                 </div>
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="show-only-faces"
+                  checked={showOnlyWithFaces}
+                  onCheckedChange={(checked) => setShowOnlyWithFaces(!!checked)}
+                />
+                <Label htmlFor="show-only-faces" className="text-sm">人物が写っている写真のみ表示</Label>
               </div>
             </div>
           ) : (

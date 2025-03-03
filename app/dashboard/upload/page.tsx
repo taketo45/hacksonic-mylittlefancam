@@ -68,7 +68,7 @@ interface ParticipantData {
 export default function UploadPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const eventId = searchParams.get('eventId')
+  const eventId = searchParams?.get('eventId') || undefined
   
   const [uploadFiles, setUploadFiles] = useState<UploadFile[]>([])
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'analyzing' | 'uploading' | 'success' | 'error'>('idle')
