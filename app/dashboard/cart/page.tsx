@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import Link from 'next/link'
-import Image from 'next/image'
 
 // 写真の型定義
 interface CartItem {
@@ -38,8 +37,8 @@ export default function CartPage() {
           {
             id: 'cart-1',
             photoId: 'photo-1',
-            photoUrl: 'https://picsum.photos/800/600?random=401',
-            thumbnailUrl: 'https://picsum.photos/400/300?random=401',
+            photoUrl: 'https://source.unsplash.com/random/800x600?sig=401',
+            thumbnailUrl: 'https://source.unsplash.com/random/400x300?sig=401',
             title: '写真 1',
             eventName: '保育園夏祭り 2023',
             price: 500,
@@ -49,8 +48,8 @@ export default function CartPage() {
           {
             id: 'cart-2',
             photoId: 'photo-2',
-            photoUrl: 'https://picsum.photos/800/600?random=402',
-            thumbnailUrl: 'https://picsum.photos/400/300?random=402',
+            photoUrl: 'https://source.unsplash.com/random/800x600?sig=402',
+            thumbnailUrl: 'https://source.unsplash.com/random/400x300?sig=402',
             title: '写真 2',
             eventName: '保育園夏祭り 2023',
             price: 500,
@@ -60,8 +59,8 @@ export default function CartPage() {
           {
             id: 'cart-3',
             photoId: 'photo-3',
-            photoUrl: 'https://picsum.photos/800/600?random=403',
-            thumbnailUrl: 'https://picsum.photos/400/300?random=403',
+            photoUrl: 'https://source.unsplash.com/random/800x600?sig=403',
+            thumbnailUrl: 'https://source.unsplash.com/random/400x300?sig=403',
             title: '写真 3',
             eventName: '運動会 2023',
             price: 500,
@@ -179,11 +178,9 @@ export default function CartPage() {
                   <li key={item.id} className="p-4">
                     <div className="flex flex-col gap-4 sm:flex-row">
                       <div className="h-32 w-32 flex-shrink-0 overflow-hidden rounded-md">
-                        <Image
+                        <img
                           src={item.thumbnailUrl}
                           alt={item.title}
-                          width={128}
-                          height={128}
                           className="h-full w-full object-cover"
                         />
                       </div>

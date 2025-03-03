@@ -15,6 +15,9 @@ import { BiSolidMask } from 'react-icons/bi'
 import { BsEmojiSmile, BsEmojiLaughing } from 'react-icons/bs'
 import { MdBlurOn, MdOutlineBlurCircular } from 'react-icons/md'
 import { RiImageEditFill } from 'react-icons/ri'
+import { useRouter } from 'next/navigation'
+import { Card, CardContent } from '@/components/ui/card'
+import { Checkbox } from '@/components/ui/checkbox'
 
 // 写真の型定義
 interface Photo {
@@ -25,13 +28,9 @@ interface Photo {
   eventName: string
   takenAt: string
   hasUserFace: boolean
-  facePosition: {
-    x: number
-    y: number
-    width: number
-    height: number
-  } | null
+  price: number
   isPurchased: boolean
+  smileScore?: number // 笑顔度（0-100）
   detectedFaces?: {
     id: string;
     boundingBox: {
@@ -46,6 +45,8 @@ interface Photo {
     };
     smileScore?: number;
   }[];
+  hasFaces?: boolean; // 顔が含まれているかどうかのフラグを追加
+  isSelected?: boolean; // 選択状態
 }
 
 // フレームの型定義
@@ -63,6 +64,7 @@ interface MaskingOption {
 }
 
 export default function EditPage() {
+  const router = useRouter()
   const [photos, setPhotos] = useState<Photo[]>([])
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null)
   const [frames, setFrames] = useState<Frame[]>([])
@@ -72,13 +74,21 @@ export default function EditPage() {
   const [isMaskingFace, setIsMaskingFace] = useState(false)
   const [isProcessing, setIsProcessing] = useState(false)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
-  const [activeTab, setActiveTab] = useState<'frame' | 'mask'>('frame')
+  const [activeTab, setActiveTab] = useState('all')
   const [selectedMaskOption, setSelectedMaskOption] = useState<string>('blur')
   const [maskIntensity, setMaskIntensity] = useState<number>(50)
   const [snsCaption, setSnsCaption] = useState<string>('')
   const [snsHashtags, setSnsHashtags] = useState<string>('#SmileShare #子供の笑顔')
   const [maskAllFaces, setMaskAllFaces] = useState<boolean>(false)
   const [maskOnlyOthers, setMaskOnlyOthers] = useState<boolean>(true)
+  const [selectedEvent, setSelectedEvent] = useState<string | null>(null)
+  const [events, setEvents] = useState<{ id: string; name: string }[]>([])
+  const [minSmileScore, setMinSmileScore] = useState(0)
+  const [showOnlyWithFaces, setShowOnlyWithFaces] = useState(true) // 顔が含まれている写真のみを表示するかどうかのフラグ
+  const [editedImage, setEditedImage] = useState<string | null>(null)
+  const [brightness, setBrightness] = useState(100)
+  const [contrast, setContrast] = useState(100)
+  const [saturation, setSaturation] = useState(100)
 
   // マスキングオプション
   const maskingOptions: MaskingOption[] = [
@@ -122,18 +132,19 @@ export default function EditPage() {
         setFrames(mockFrames)
         
         // 写真のモックデータ
-        const mockPhotos: Photo[] = Array.from({ length: 6 }, (_, i) => {
-          // ランダムな顔検出データを生成
-          const detectedFacesCount = Math.floor(Math.random() * 3) + 1; // 1〜3人の顔
-          const detectedFaces = Array.from({ length: detectedFacesCount }, (_, j) => {
-            // ランダムな位置とサイズ
-            const left = 0.1 + Math.random() * 0.6;
-            const top = 0.1 + Math.random() * 0.6;
-            const width = 0.1 + Math.random() * 0.2;
-            const height = width * 1.3; // 顔の縦横比を考慮
+        const mockPhotos: Photo[] = Array.from({ length: 20 }, (_, i) => {
+          // 各写真に0〜4人の顔を検出（20%の確率で顔なし）
+          const faceCount = Math.random() > 0.2 ? Math.floor(Math.random() * 4) + 1 : 0;
+          const detectedFaces = Array.from({ length: faceCount }, (_, j) => {
+            // ランダムな位置とサイズの顔を生成
+            const left = 0.1 + Math.random() * 0.7
+            const top = 0.1 + Math.random() * 0.7
+            const width = 0.1 + Math.random() * 0.2
+            const height = width * (1 + Math.random() * 0.2)
+            const smileScore = Math.floor(Math.random() * 100)
             
-            // 最初の顔はユーザー自身の顔とする確率を高くする
-            const isUserFace = j === 0 ? Math.random() > 0.3 : Math.random() > 0.8;
+            // 30%の確率でユーザー自身の顔とマッチング
+            const isUserFace = Math.random() > 0.7
             
             return {
               id: `face-${i}-${j}`,
@@ -147,38 +158,34 @@ export default function EditPage() {
                 id: 'user-1',
                 name: 'あなた'
               } : undefined,
-              smileScore: Math.floor(Math.random() * 100)
-            };
-          });
+              smileScore
+            }
+          })
           
-          // 自分の顔が含まれているかどうか
-          const hasUserFace = detectedFaces.some(face => face.matchedUser !== undefined);
-          
-          // メインの顔の位置（最初の検出顔を使用）
-          const mainFace = detectedFaces[0].boundingBox;
-          const facePosition = {
-            x: mainFace.left,
-            y: mainFace.top,
-            width: mainFace.width,
-            height: mainFace.height
-          };
+          // 写真全体の笑顔度は検出された顔の笑顔度の平均
+          const avgSmileScore = detectedFaces.length > 0 
+            ? detectedFaces.reduce((sum, face) => sum + (face.smileScore || 0), 0) / detectedFaces.length
+            : 0;
           
           return {
-            id: `photo${i + 1}`,
-            url: `https://placehold.co/800x600/f5f5f5/aaaaaa?text=Photo${i + 1}`,
-            thumbnailUrl: `https://placehold.co/200x150/f5f5f5/aaaaaa?text=Photo${i + 1}`,
+            id: `photo-${i + 1}`,
+            url: `https://picsum.photos/800/600?random=${i + 1}`,
+            thumbnailUrl: `https://picsum.photos/400/300?random=${i + 1}`,
             title: `写真 ${i + 1}`,
-            eventName: `イベント ${Math.floor(i / 2) + 1}`,
-            takenAt: new Date(2023, i % 12, (i % 28) + 1).toISOString(),
-            hasUserFace,
-            facePosition,
-            isPurchased: i < 3, // 最初の3枚は購入済み
-            detectedFaces
-          };
-        });
+            eventName: mockFrames[Math.floor(i / 5)].name,
+            takenAt: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
+            hasUserFace: detectedFaces.some(face => face.matchedUser?.name === 'あなた'),
+            price: 500,
+            isPurchased: Math.random() > 0.8,
+            smileScore: detectedFaces.length > 0 ? Math.round(avgSmileScore) : undefined,
+            detectedFaces,
+            hasFaces: detectedFaces.length > 0, // 顔が含まれているかどうかのフラグを設定
+            isSelected: false
+          }
+        })
         
-        setFrames(mockFrames);
-        setPhotos(mockPhotos);
+        setFrames(mockFrames)
+        setPhotos(mockPhotos)
         
         // 最初の写真を選択
         if (mockPhotos.length > 0) {
@@ -201,7 +208,12 @@ export default function EditPage() {
     setSelectedFrame(null)
     setIsMaskingFace(false)
     setPreviewUrl(null)
-    setActiveTab('frame')
+    setActiveTab('all')
+    setEditedImage(null)
+    // リセット
+    setBrightness(100)
+    setContrast(100)
+    setSaturation(100)
   }
 
   // フレームを選択
@@ -235,6 +247,21 @@ export default function EditPage() {
     
     // プレビュー用のURLを生成（実際には画像処理サーバーのURLになる）
     setPreviewUrl(`${selectedPhoto.url}${frameParam}${maskParam}${maskAllParam}${maskOnlyOthersParam}`)
+  }
+
+  // 編集を適用
+  const applyEdit = () => {
+    // 実際のアプリでは画像処理ライブラリを使用して編集を適用
+    // ここではモックとして元の画像を使用
+    setEditedImage(selectedPhoto?.url || null)
+  }
+
+  // 編集をリセット
+  const resetEdit = () => {
+    setBrightness(100)
+    setContrast(100)
+    setSaturation(100)
+    setEditedImage(null)
   }
 
   // 編集を保存
@@ -285,6 +312,45 @@ export default function EditPage() {
     return date.toLocaleDateString('ja-JP')
   }
 
+  // 笑顔度に応じた色を返す
+  const getSmileColor = (score: number) => {
+    if (score >= 80) return 'bg-green-500'
+    if (score >= 60) return 'bg-green-400'
+    if (score >= 40) return 'bg-yellow-400'
+    if (score >= 20) return 'bg-orange-400'
+    return 'bg-red-400'
+  }
+
+  // イベントでフィルタリングされた写真
+  const filteredByEvent = selectedEvent
+    ? photos.filter((photo) => photo.eventName === events.find((e) => e.id === selectedEvent)?.name)
+    : photos
+
+  // 顔の有無でフィルタリング
+  const filteredByFaces = showOnlyWithFaces
+    ? filteredByEvent.filter(photo => photo.hasFaces)
+    : filteredByEvent
+
+  // 笑顔度でフィルタリング
+  const filteredBySmile = filteredByFaces.filter(photo => 
+    !showOnlyWithFaces || (photo.smileScore !== undefined && photo.smileScore >= minSmileScore)
+  )
+  
+  // タブに応じたフィルタリング
+  const getFilteredPhotos = () => {
+    switch (activeTab) {
+      case 'user':
+        return filteredBySmile.filter(photo => photo.hasUserFace)
+      case 'smile':
+        return [...filteredBySmile].sort((a, b) => (b.smileScore || 0) - (a.smileScore || 0))
+      case 'all':
+      default:
+        return filteredBySmile
+    }
+  }
+  
+  const filteredPhotos = getFilteredPhotos()
+
   if (isLoading) {
     return (
       <div className="flex h-full items-center justify-center p-6">
@@ -311,288 +377,232 @@ export default function EditPage() {
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">写真編集</h1>
         <p className="mt-1 text-gray-600">
-          写真にフレームを追加したり、SNS用に顔をマスキングしたりできます。
+          写真の明るさ、コントラスト、彩度などを調整できます。
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* 左側: 写真一覧 */}
-        <div className="lg:col-span-1">
-          <div className="mb-4">
-            <h2 className="text-lg font-semibold text-gray-800">写真を選択</h2>
-          </div>
-          <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-2">
-            {photos.map((photo) => (
-              <div
-                key={photo.id}
-                className={`cursor-pointer overflow-hidden rounded-lg border ${
-                  selectedPhoto?.id === photo.id
-                    ? 'border-milab-500 ring-2 ring-milab-500'
-                    : 'border-gray-200'
-                }`}
-                onClick={() => handleSelectPhoto(photo)}
-              >
-                <div className="relative">
+      {selectedPhoto ? (
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          <div className="lg:col-span-2">
+            <Card>
+              <CardContent className="p-4">
+                <div className="aspect-w-4 aspect-h-3 relative">
                   <Image
-                    src={photo.thumbnailUrl}
-                    alt={photo.title}
-                    width={200}
-                    height={150}
-                    className="h-24 w-full object-cover"
-                  />
-                  {photo.hasUserFace && (
-                    <div className="absolute top-1 right-1">
-                      <span className="inline-flex items-center rounded-full bg-milab-100 px-2 py-0.5 text-xs font-medium text-milab-800">
-                        あなた
-                      </span>
-                    </div>
-                  )}
-                </div>
-                <div className="p-2">
-                  <p className="truncate text-xs font-medium text-gray-900">{photo.title}</p>
-                  <p className="text-xs text-gray-500">{formatDate(photo.takenAt)}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* 中央: プレビュー */}
-        <div className="lg:col-span-1">
-          <div className="mb-4">
-            <h2 className="text-lg font-semibold text-gray-800">プレビュー</h2>
-          </div>
-          {selectedPhoto ? (
-            <div className="overflow-hidden rounded-lg border border-gray-200 bg-gray-50">
-              <div className="relative">
-                <Image
-                  src={previewUrl || selectedPhoto.url}
-                  alt={selectedPhoto.title}
-                  width={800}
-                  height={600}
-                  className="w-full"
-                />
-                
-                {/* 顔の位置を示すオーバーレイ（マスキングモードでない場合のみ表示） */}
-                {!isMaskingFace && selectedPhoto.detectedFaces?.map((face, index) => (
-                  <div
-                    key={face.id}
-                    className={`absolute border-2 ${face.matchedUser ? 'border-green-500' : 'border-white'} pointer-events-none`}
+                    src={editedImage || selectedPhoto.url}
+                    alt={selectedPhoto.title}
+                    width={800}
+                    height={600}
+                    className="w-full object-contain"
                     style={{
-                      left: `${face.boundingBox.left * 100}%`,
-                      top: `${face.boundingBox.top * 100}%`,
-                      width: `${face.boundingBox.width * 100}%`,
-                      height: `${face.boundingBox.height * 100}%`,
+                      filter: `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%)`
                     }}
-                  >
-                    {face.matchedUser && (
-                      <div className="absolute -top-6 left-0 bg-black bg-opacity-70 text-white text-xs px-1 py-0.5 rounded whitespace-nowrap">
-                        {face.matchedUser.name}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-              <div className="p-3">
-                <p className="text-sm font-medium text-gray-900">{selectedPhoto.title}</p>
-                <p className="text-xs text-gray-500">{selectedPhoto.eventName}</p>
-              </div>
-            </div>
-          ) : (
-            <div className="flex h-64 items-center justify-center rounded-lg border border-gray-200 bg-gray-50">
-              <p className="text-gray-500">写真を選択してください</p>
-            </div>
-          )}
-          
-          {selectedPhoto && (
-            <div className="mt-4 flex justify-center space-x-4">
-              <button
-                onClick={handleSaveEdit}
-                disabled={isProcessing || (!selectedFrame && !isMaskingFace)}
-                className="rounded-md bg-milab-600 px-4 py-2 text-sm font-medium text-white hover:bg-milab-700 focus:outline-none focus:ring-2 focus:ring-milab-500 focus:ring-offset-2 disabled:opacity-50"
-              >
-                {isProcessing ? '処理中...' : '保存する'}
-              </button>
-              
-              {activeTab === 'mask' && (
-                <button
-                  onClick={handleSaveForSNS}
-                  disabled={isProcessing || !isMaskingFace}
-                  className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
-                >
-                  {isProcessing ? '処理中...' : 'SNS用に保存'}
-                </button>
-              )}
-            </div>
-          )}
-        </div>
-
-        {/* 右側: 編集オプション */}
-        <div className="lg:col-span-1">
-          {selectedPhoto && (
-            <>
-              <div className="mb-4">
-                <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as 'frame' | 'mask')}>
-                  <TabsList className="w-full">
-                    <TabsTrigger value="frame" className="flex-1">フレーム編集</TabsTrigger>
-                    <TabsTrigger value="mask" className="flex-1">
-                      <div className="flex items-center">
-                        <span>SNS用マスキング</span>
-                        <Badge variant="secondary" className="ml-2 bg-red-500 text-white">NEW</Badge>
-                      </div>
-                    </TabsTrigger>
-                  </TabsList>
+                  />
                   
-                  <TabsContent value="frame">
-                    <div className="mb-4">
-                      <h2 className="text-lg font-semibold text-gray-800">フレームを選択</h2>
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      {frames.map((frame) => (
-                        <div
-                          key={frame.id}
-                          className={`cursor-pointer overflow-hidden rounded-lg border ${
-                            selectedFrame === frame.id
-                              ? 'border-milab-500 ring-2 ring-milab-500'
-                              : 'border-gray-200'
-                          }`}
-                          onClick={() => handleSelectFrame(frame.id)}
-                        >
-                          <Image
-                            src={frame.thumbnailUrl}
-                            alt={frame.name}
-                            width={100}
-                            height={100}
-                            className="h-24 w-full object-cover"
-                          />
-                          <div className="p-2">
-                            <p className="text-center text-xs font-medium">{frame.name}</p>
-                          </div>
+                  {/* 顔の位置を示すオーバーレイ */}
+                  {selectedPhoto.detectedFaces?.map((face) => (
+                    <div
+                      key={face.id}
+                      className={`absolute border-2 ${face.matchedUser ? 'border-green-500' : 'border-white'} pointer-events-none`}
+                      style={{
+                        left: `${face.boundingBox.left * 100}%`,
+                        top: `${face.boundingBox.top * 100}%`,
+                        width: `${face.boundingBox.width * 100}%`,
+                        height: `${face.boundingBox.height * 100}%`,
+                      }}
+                    >
+                      {face.matchedUser && (
+                        <div className="absolute -top-6 left-0 bg-black bg-opacity-70 text-white text-xs px-1 py-0.5 rounded whitespace-nowrap">
+                          {face.matchedUser.name}
                         </div>
-                      ))}
-                    </div>
-                  </TabsContent>
-                  
-                  <TabsContent value="mask">
-                    <div className="space-y-6">
-                      <div>
-                        <h2 className="mb-4 text-lg font-semibold text-gray-800">マスキングオプション</h2>
-                        <div className="flex items-center justify-between">
-                          <Label htmlFor="masking-toggle" className="text-sm font-medium text-gray-700">
-                            顔マスキングを有効にする
-                          </Label>
-                          <Switch
-                            id="masking-toggle"
-                            checked={isMaskingFace}
-                            onCheckedChange={handleToggleMasking}
-                          />
-                        </div>
-                      </div>
-                      
-                      {isMaskingFace && (
-                        <>
-                          <div>
-                            <h3 className="mb-2 text-sm font-medium text-gray-700">マスキング方法</h3>
-                            <div className="grid grid-cols-3 gap-2">
-                              {maskingOptions.map((option) => (
-                                <button
-                                  key={option.id}
-                                  className={`flex flex-col items-center justify-center rounded-lg border p-3 ${
-                                    selectedMaskOption === option.id
-                                      ? 'border-milab-500 bg-milab-50'
-                                      : 'border-gray-200 hover:bg-gray-50'
-                                  }`}
-                                  onClick={() => handleSelectMaskOption(option.id)}
-                                >
-                                  <div className="mb-2 text-gray-600">{option.icon}</div>
-                                  <span className="text-xs font-medium">{option.name}</span>
-                                </button>
-                              ))}
-                            </div>
-                          </div>
-                          
-                          <div>
-                            <div className="mb-2 flex items-center justify-between">
-                              <Label htmlFor="mask-intensity" className="text-sm font-medium text-gray-700">
-                                マスキング強度
-                              </Label>
-                              <span className="text-xs text-gray-500">{maskIntensity}%</span>
-                            </div>
-                            <Slider
-                              id="mask-intensity"
-                              value={[maskIntensity]}
-                              onValueChange={(values) => {
-                                setMaskIntensity(values[0])
-                                generatePreview(selectedFrame, isMaskingFace)
-                              }}
-                              max={100}
-                              step={10}
-                            />
-                          </div>
-                          
-                          <div className="space-y-2">
-                            <div className="flex items-center justify-between">
-                              <Label htmlFor="mask-all" className="text-sm font-medium text-gray-700">
-                                すべての顔をマスク
-                              </Label>
-                              <Switch
-                                id="mask-all"
-                                checked={maskAllFaces}
-                                onCheckedChange={(checked) => {
-                                  setMaskAllFaces(checked)
-                                  if (checked) setMaskOnlyOthers(false)
-                                  generatePreview(selectedFrame, isMaskingFace)
-                                }}
-                              />
-                            </div>
-                            
-                            <div className="flex items-center justify-between">
-                              <Label htmlFor="mask-others" className="text-sm font-medium text-gray-700">
-                                自分以外の顔のみマスク
-                              </Label>
-                              <Switch
-                                id="mask-others"
-                                checked={maskOnlyOthers}
-                                onCheckedChange={(checked) => {
-                                  setMaskOnlyOthers(checked)
-                                  if (checked) setMaskAllFaces(false)
-                                  generatePreview(selectedFrame, isMaskingFace)
-                                }}
-                              />
-                            </div>
-                          </div>
-                          
-                          <div>
-                            <h3 className="mb-2 text-sm font-medium text-gray-700">SNS投稿用キャプション</h3>
-                            <textarea
-                              value={snsCaption}
-                              onChange={(e) => setSnsCaption(e.target.value)}
-                              className="w-full rounded-md border-gray-300 shadow-sm focus:border-milab-500 focus:ring-milab-500"
-                              rows={2}
-                              placeholder="キャプションを入力（任意）"
-                            />
-                          </div>
-                          
-                          <div>
-                            <h3 className="mb-2 text-sm font-medium text-gray-700">ハッシュタグ</h3>
-                            <input
-                              type="text"
-                              value={snsHashtags}
-                              onChange={(e) => setSnsHashtags(e.target.value)}
-                              className="w-full rounded-md border-gray-300 shadow-sm focus:border-milab-500 focus:ring-milab-500"
-                              placeholder="#SmileShare #子供の笑顔"
-                            />
-                          </div>
-                        </>
                       )}
                     </div>
-                  </TabsContent>
-                </Tabs>
-              </div>
-            </>
-          )}
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          
+          <div>
+            <Card>
+              <CardContent className="p-4">
+                <h3 className="text-lg font-medium mb-4">編集ツール</h3>
+                
+                <div className="space-y-6">
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label htmlFor="brightness" className="text-sm font-medium">明るさ: {brightness}%</label>
+                    </div>
+                    <Slider
+                      id="brightness"
+                      value={[brightness]}
+                      onValueChange={(values) => setBrightness(values[0])}
+                      min={0}
+                      max={200}
+                      step={1}
+                    />
+                  </div>
+                  
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label htmlFor="contrast" className="text-sm font-medium">コントラスト: {contrast}%</label>
+                    </div>
+                    <Slider
+                      id="contrast"
+                      value={[contrast]}
+                      onValueChange={(values) => setContrast(values[0])}
+                      min={0}
+                      max={200}
+                      step={1}
+                    />
+                  </div>
+                  
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label htmlFor="saturation" className="text-sm font-medium">彩度: {saturation}%</label>
+                    </div>
+                    <Slider
+                      id="saturation"
+                      value={[saturation]}
+                      onValueChange={(values) => setSaturation(values[0])}
+                      min={0}
+                      max={200}
+                      step={1}
+                    />
+                  </div>
+                  
+                  <div className="flex flex-col space-y-2">
+                    <Button onClick={applyEdit}>編集を適用</Button>
+                    <Button variant="outline" onClick={resetEdit}>リセット</Button>
+                    <Button variant="secondary" onClick={handleSaveEdit}>保存</Button>
+                    <Button variant="ghost" onClick={() => setSelectedPhoto(null)}>キャンセル</Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
-      </div>
+      ) : (
+        <>
+          <div className="mb-6 flex flex-wrap items-center gap-4">
+            <div>
+              <label htmlFor="event-filter" className="mr-2 text-sm font-medium text-gray-700">
+                イベント:
+              </label>
+              <select
+                id="event-filter"
+                value={selectedEvent || ''}
+                onChange={(e) => setSelectedEvent(e.target.value || null)}
+                className="rounded-md border-gray-300 shadow-sm focus:border-milab-500 focus:ring-milab-500 sm:text-sm"
+              >
+                <option value="">すべてのイベント</option>
+                {events.map((event) => (
+                  <option key={event.id} value={event.id}>
+                    {event.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex items-center space-x-2">
+              <Checkbox
+                id="show-only-faces"
+                checked={showOnlyWithFaces}
+                onCheckedChange={(checked) => setShowOnlyWithFaces(!!checked)}
+              />
+              <Label htmlFor="show-only-faces" className="text-sm">人物が写っている写真のみ表示</Label>
+            </div>
+          </div>
+
+          <div className="mb-6">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <Tabs defaultValue="all" value={activeTab} onValueChange={setActiveTab} className="w-full md:w-auto">
+                <TabsList>
+                  <TabsTrigger value="all">すべての写真</TabsTrigger>
+                  <TabsTrigger value="user">あなたが写っている写真</TabsTrigger>
+                  <TabsTrigger value="smile">笑顔度順</TabsTrigger>
+                </TabsList>
+              </Tabs>
+              
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-gray-700">最低笑顔度:</span>
+                <Slider
+                  value={[minSmileScore]}
+                  onValueChange={(values) => setMinSmileScore(values[0])}
+                  max={100}
+                  step={10}
+                  className="w-40"
+                />
+                <span className="min-w-[2rem] text-sm text-gray-700">{minSmileScore}%</span>
+              </div>
+            </div>
+          </div>
+
+          {filteredPhotos.length === 0 ? (
+            <div className="rounded-lg border border-gray-200 bg-gray-50 p-8 text-center">
+              <p className="text-gray-500">条件に一致する写真がありません</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+              {filteredPhotos.map((photo) => (
+                <div
+                  key={photo.id}
+                  className="overflow-hidden rounded-lg border border-gray-200 bg-white shadow transition-all hover:shadow-md cursor-pointer"
+                  onClick={() => handleSelectPhoto(photo)}
+                >
+                  <div className="relative">
+                    <Image
+                      src={photo.thumbnailUrl}
+                      alt={photo.title}
+                      width={400}
+                      height={300}
+                      className="h-48 w-full object-cover"
+                    />
+                    
+                    {/* 顔の位置を示すオーバーレイ */}
+                    {photo.detectedFaces?.map((face) => (
+                      <div
+                        key={face.id}
+                        className={`absolute border-2 ${face.matchedUser ? 'border-green-500' : 'border-white'} pointer-events-none`}
+                        style={{
+                          left: `${face.boundingBox.left * 100}%`,
+                          top: `${face.boundingBox.top * 100}%`,
+                          width: `${face.boundingBox.width * 100}%`,
+                          height: `${face.boundingBox.height * 100}%`,
+                        }}
+                      >
+                        {face.matchedUser && (
+                          <div className="absolute -top-6 left-0 bg-black bg-opacity-70 text-white text-xs px-1 py-0.5 rounded whitespace-nowrap">
+                            {face.matchedUser.name}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                    
+                    <div className="absolute top-2 left-2 flex flex-col gap-1">
+                      {photo.hasUserFace && (
+                        <Badge variant="secondary" className="bg-milab-500 text-white hover:bg-milab-600">
+                          あなたが写っています
+                        </Badge>
+                      )}
+                      
+                      {photo.smileScore !== undefined && (
+                        <Badge variant="secondary" className={`${getSmileColor(photo.smileScore)} text-white`}>
+                          笑顔度: {photo.smileScore}%
+                        </Badge>
+                      )}
+                    </div>
+                  </div>
+                  <div className="p-4">
+                    <h3 className="text-sm font-medium text-gray-900">{photo.title}</h3>
+                    <p className="mt-1 text-xs text-gray-500">{photo.eventName}</p>
+                    <p className="mt-1 text-xs text-gray-500">撮影日: {formatDate(photo.takenAt)}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </>
+      )}
     </div>
   )
 } 

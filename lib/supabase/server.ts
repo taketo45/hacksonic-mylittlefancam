@@ -32,8 +32,8 @@ export function createClient(useServiceRole = false) {
   
   return createSupabaseClient(supabaseUrl, supabaseKey, {
     auth: {
-      persistSession: false,
-      autoRefreshToken: false,
+      persistSession: true, // セッション情報を保持するように変更
+      autoRefreshToken: true, // トークンの自動更新も有効化
       detectSessionInUrl: false,
     },
   })
@@ -60,8 +60,8 @@ export function createClientWithCookies() {
     supabaseKey, 
     {
       auth: {
-        persistSession: false,
-        autoRefreshToken: false,
+        persistSession: true, // セッション情報を保持するように変更
+        autoRefreshToken: true, // トークンの自動更新も有効化
         detectSessionInUrl: false,
       },
       global: {

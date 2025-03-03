@@ -8,6 +8,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Slider } from '@/components/ui/slider'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Label } from '@/components/ui/label'
 
 // 写真の型定義
 interface Photo {
@@ -35,6 +37,7 @@ interface Photo {
     };
     smileScore?: number;
   }[];
+  hasFaces?: boolean; // 顔が含まれているかどうかのフラグを追加
 }
 
 export default function PhotosPage() {
@@ -47,6 +50,7 @@ export default function PhotosPage() {
   const [activeTab, setActiveTab] = useState('all')
   const [minSmileScore, setMinSmileScore] = useState(0)
   const [user, setUser] = useState<any>(null)
+  const [showOnlyWithFaces, setShowOnlyWithFaces] = useState(true) // 顔が含まれている写真のみを表示するかどうかのフラグ
 
   // 写真とイベントの取得
   useEffect(() => {
@@ -69,10 +73,25 @@ export default function PhotosPage() {
         ]
         setEvents(mockEvents)
         
-        // 写真の取得（ハッカソンデモ用のモックデータ）
-        const mockPhotos: Photo[] = Array.from({ length: 20 }, (_, i) => {
-          // 各写真に1〜4人の顔を検出
-          const faceCount = Math.floor(Math.random() * 4) + 1
+        // 実際のAPIから写真を取得
+        // 顔写真のみを取得するためのパラメータ「facesOnly=true」を追加
+        const response = await fetch('/api/photos?facesOnly=true', {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+        
+        if (!response.ok) {
+          throw new Error(`写真の取得に失敗しました: ${response.status}`);
+        }
+        
+        const photoData = await response.json();
+        
+        // APIから取得したデータを整形
+        const formattedPhotos: Photo[] = photoData.map((photo: any, index: number) => {
+          // 各写真に1〜4人の顔を検出（すべての写真に顔があると仮定）
+          const faceCount = Math.floor(Math.random() * 3) + 1;
           const detectedFaces = Array.from({ length: faceCount }, (_, j) => {
             // ランダムな位置とサイズの顔を生成
             const left = 0.1 + Math.random() * 0.7
@@ -85,7 +104,7 @@ export default function PhotosPage() {
             const isUserFace = Math.random() > 0.7
             
             return {
-              id: `face-${i}-${j}`,
+              id: `face-${index}-${j}`,
               boundingBox: {
                 left,
                 top,
@@ -98,27 +117,30 @@ export default function PhotosPage() {
               } : undefined,
               smileScore
             }
-          })
+          });
           
           // 写真全体の笑顔度は検出された顔の笑顔度の平均
-          const avgSmileScore = detectedFaces.reduce((sum, face) => sum + (face.smileScore || 0), 0) / detectedFaces.length
+          const avgSmileScore = detectedFaces.length > 0 
+            ? detectedFaces.reduce((sum, face) => sum + (face.smileScore || 0), 0) / detectedFaces.length
+            : 0;
           
           return {
-            id: `photo-${i + 1}`,
-            url: `https://picsum.photos/800/600?random=${i + 1}`,
-            thumbnailUrl: `https://picsum.photos/400/300?random=${i + 1}`,
-            title: `写真 ${i + 1}`,
-            eventName: mockEvents[Math.floor(i / 7)].name,
-            takenAt: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
+            id: photo.id || `photo-${index + 1}`,
+            url: photo.url || `https://picsum.photos/800/600?random=${index + 1}`,
+            thumbnailUrl: photo.thumbnailUrl || photo.url || `https://picsum.photos/400/300?random=${index + 1}`,
+            title: photo.name || `写真 ${index + 1}`,
+            eventName: mockEvents[Math.floor(index / 7) % mockEvents.length].name,
+            takenAt: photo.created || new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
             hasUserFace: detectedFaces.some(face => face.matchedUser?.name === 'あなた'),
             price: 500,
             isPurchased: Math.random() > 0.8,
             smileScore: Math.round(avgSmileScore),
-            detectedFaces
+            detectedFaces,
+            hasFaces: true // APIから取得した写真はすべて顔があると仮定
           }
-        })
+        });
         
-        setPhotos(mockPhotos)
+        setPhotos(formattedPhotos);
       } catch (err) {
         console.error('データ取得エラー:', err)
         setError('データの取得中にエラーが発生しました')
@@ -151,9 +173,14 @@ export default function PhotosPage() {
     ? photos.filter((photo) => photo.eventName === events.find((e) => e.id === selectedEvent)?.name)
     : photos
 
+  // 顔の有無でフィルタリング
+  const filteredByFaces = showOnlyWithFaces
+    ? filteredByEvent.filter(photo => photo.hasFaces)
+    : filteredByEvent
+
   // 笑顔度でフィルタリング
-  const filteredBySmile = filteredByEvent.filter(photo => 
-    (photo.smileScore || 0) >= minSmileScore
+  const filteredBySmile = filteredByFaces.filter(photo => 
+    !showOnlyWithFaces || (photo.smileScore !== undefined && photo.smileScore >= minSmileScore)
   )
   
   // タブに応じたフィルタリング
@@ -228,6 +255,15 @@ export default function PhotosPage() {
               </option>
             ))}
           </select>
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <Checkbox
+            id="show-only-faces"
+            checked={showOnlyWithFaces}
+            onCheckedChange={(checked) => setShowOnlyWithFaces(!!checked)}
+          />
+          <Label htmlFor="show-only-faces" className="text-sm">人物が写っている写真のみ表示</Label>
         </div>
 
         <div className="ml-auto">

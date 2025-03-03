@@ -12,8 +12,9 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const eventId = searchParams.get('eventId');
     const eventSlotId = searchParams.get('eventSlotId');
+    const facesOnly = searchParams.get('facesOnly') === 'true'; // 顔写真のみを取得するかどうか
     
-    console.log('写真一覧取得パラメータ:', { eventId, eventSlotId });
+    console.log('写真一覧取得パラメータ:', { eventId, eventSlotId, facesOnly });
     
     // Supabaseクライアントを作成
     // ハッカソンMVP用に一時的にサービスロールキーを使用
@@ -58,7 +59,7 @@ export async function GET(req: NextRequest) {
       }
       
       // 写真のURLを取得
-      const photos = data.map(item => {
+      let photos = data.map(item => {
         const filePath = path ? `${path}/${item.name}` : item.name;
         const { data: { publicUrl } } = supabase
           .storage
@@ -66,13 +67,23 @@ export async function GET(req: NextRequest) {
           .getPublicUrl(filePath);
         
         return {
+          id: item.id || uuidv4(),
           name: item.name,
           url: publicUrl,
           size: item.metadata?.size,
           created: item.created_at,
-          path: filePath
+          path: filePath,
+          // 顔検出情報を追加（実際のアプリでは、データベースから取得するか、画像解析サービスを使用）
+          hasFaces: Math.random() > 0.3, // 70%の確率で顔ありとする（デモ用）
+          faceCount: Math.floor(Math.random() * 4) + 1 // 1〜4人の顔（デモ用）
         };
       });
+      
+      // facesOnlyパラメータが指定されている場合、顔が含まれている写真のみをフィルタリング
+      if (facesOnly) {
+        console.log('顔写真のみをフィルタリングします');
+        photos = photos.filter(photo => photo.hasFaces);
+      }
       
       return NextResponse.json(photos);
     } catch (listError) {

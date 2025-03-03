@@ -19,6 +19,7 @@ export default async function DashboardLayout({
   if (!session) {
     console.log('Dashboard Layout - No session, but middleware should have redirected already')
     // ミドルウェアが機能していない場合のフォールバック
+    // リダイレクトループを防ぐために一時的にコメントアウト
     // return redirect('/login')
   }
 
