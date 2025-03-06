@@ -19,16 +19,25 @@ export default async function AdminLayout({
   }
 
   // システム管理者ロールを持っているか確認
-  const { data: userRoles } = await supabase
-    .from('user_role_tbl')
-    .select('role_mst(role_key)')
-    .eq('user_id', session.user.id)
+  const { data: userRoles, error: roleError } = await supabase
+  .from('user_role_tbl')
+  .select(`
+    role_id,
+    role_mst!inner (
+      role_name
+    )
+  `)
+  .eq('user_id', session.user.id)
 
-  const isSystemAdmin = userRoles?.some(
-    (role) => role.role_mst?.role_key === 'SYSTEM_ADMIN'
-  )
+  if (roleError) {
+    throw roleError
+  }
 
-  if (!isSystemAdmin) {
+  const roleNames = userRoles?.map(role => role.role_mst.role_name) || []
+  const isAuthorized = roleNames.some(name => ['admin'].includes(name))
+
+
+  if (!isAuthorized) {
     redirect('/dashboard')
   }
 
