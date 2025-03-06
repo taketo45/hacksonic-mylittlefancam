@@ -15,7 +15,7 @@ export default function LoginPage() {
             className="mb-2 rounded-full"
           />
           <h1 className="text-2xl font-bold text-gradient">My Little Fancam</h1>
-          <h2 className="mt-6 text-2xl font-bold">ログイン</h2>
+          <h2 className="mt-6 text-2xl font-bold text-gradient">ログイン</h2>
           <p className="mt-2 text-sm text-gray-600">
             アカウントにログインして、子どもたちの素敵な瞬間を共有しましょう
           </p>

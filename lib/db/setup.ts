@@ -3,6 +3,14 @@ import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import postgres from 'postgres';
 import * as schema from './schema';
 import { sql } from 'drizzle-orm';
+import { fileURLToPath } from 'url';
+import { config } from 'dotenv';
+import { dirname, join } from 'path';
+
+// 環境変数を読み込む
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+config({ path: join(__dirname, '../../.env') });
 
 /**
  * データベースのマイグレーションを実行する関数
@@ -77,7 +85,7 @@ export async function testConnection() {
 }
 
 // コマンドラインから直接実行された場合、マイグレーションを実行
-if (require.main === module) {
+if (process.argv[1] === __filename) {
   runMigrations()
     .then(() => {
       console.log('マイグレーションが正常に完了しました。');

@@ -1,4 +1,33 @@
 erDiagram
+    %% 新規テーブル: ロールマスタ
+    RoleMst {
+        string roleId "ロールID (PK)"
+        string roleName "ロール名"
+        string roleKey "ロールキー (SYSTEM_ADMIN, HOST, PHOTOGRAPHER, USER)"
+        string description "説明"
+        boolean isActive "有効フラグ"
+        boolean isRemovable "削除可能フラグ"
+        datetime createdAt "作成日時"
+        datetime updatedAt "更新日時"
+    }
+
+    %% 新規テーブル: ユーザーロール関連
+    UserRoleTbl {
+        string userId "ユーザーID (FK)"
+        string roleId "ロールID (FK)"
+        datetime assignedAt "割り当て日時"
+        string assignedBy "割り当て者のユーザーID"
+        boolean isPrimary "主ロールフラグ"
+        datetime createdAt "作成日時"
+        datetime updatedAt "更新日時"
+    }
+
+    %% リレーションの追加
+    UserTbl ||--o{ UserRoleTbl : "has"
+    RoleMst ||--o{ UserRoleTbl : "assigned to"
+    HostTbl ||--o{ UserRoleTbl : "has"
+    PhotographerTbl ||--o{ UserRoleTbl : "has"
+
     OrganizationMst ||--o{ Organization_HostTbl : "所属"
     OrganizationMst {
         string organizationId "組織ID"
@@ -19,6 +48,7 @@ erDiagram
     HostTbl ||--o{ Host_EventTbl : "主催"
     HostTbl {
         string hostId "主催者ID"
+        string auth_user_id "Supabase認証ユーザーID"
         string name "氏名"
         string email "メール"
         string password "パスワード"
@@ -93,6 +123,7 @@ erDiagram
     UserTbl ||--o{ User_ParticipationTbl : "参加"
     UserTbl {
         string userId "ユーザーID"
+        string auth_user_id "Supabase認証ユーザーID"
         string name "氏名"
         string email "メール"
         string password "パスワード"
@@ -113,6 +144,7 @@ erDiagram
     PhotographerTbl ||--o{ PhotographerAssignTbl : "担当"
     PhotographerTbl {
         string photographerId "撮影者ID"
+        string auth_user_id "Supabase認証ユーザーID"
         string name "氏名"
         string email "メール"
         string password "パスワード"

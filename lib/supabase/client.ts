@@ -1,6 +1,16 @@
 import { createBrowserClient } from '@supabase/ssr'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { Database } from '@/lib/database.types'
 
-export function createClient() {
+export const createClient = () => {
+  if (typeof window === 'undefined') {
+    throw new Error('This method should only be called on the client side')
+  }
+
+  return createClientComponentClient<Database>()
+}
+
+export function createClientOld() {
   // 環境変数が存在しない場合のフォールバック値を設定
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder-url.supabase.co'
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-key'

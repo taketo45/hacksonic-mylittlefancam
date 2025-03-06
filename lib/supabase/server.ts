@@ -1,13 +1,13 @@
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
-import { cookies } from 'next/headers'
+import { cookies, type ReadonlyRequestCookies } from 'next/headers'
 
 /**
  * Supabaseクライアントを作成する関数
  * 
- * @param {boolean} useServiceRole - サービスロールキーを使用するかどうか
+ * @param {ReadonlyRequestCookies | boolean} cookieStoreOrServiceRole - CookieStoreまたはサービスロールキーを使用するかどうか
  * @returns {ReturnType<typeof createSupabaseClient>} Supabaseクライアント
  */
-export function createClient(useServiceRole = false) {
+export function createClient(cookieStoreOrServiceRole: ReadonlyRequestCookies | boolean = false) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
   
   // 環境変数が設定されているか確認
@@ -17,6 +17,7 @@ export function createClient(useServiceRole = false) {
   
   // ハッカソンMVP用に一時的にサービスロールキーを使用
   // 本番環境では絶対に使用しないでください
+  const useServiceRole = typeof cookieStoreOrServiceRole === 'boolean' && cookieStoreOrServiceRole
   const supabaseKey = useServiceRole 
     ? process.env.SUPABASE_SERVICE_ROLE_KEY || ''
     : process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
@@ -27,15 +28,34 @@ export function createClient(useServiceRole = false) {
       : 'NEXT_PUBLIC_SUPABASE_ANON_KEY is not set');
   }
   
+  const cookieStore = typeof cookieStoreOrServiceRole === 'object' ? cookieStoreOrServiceRole : undefined
+  
   console.log('Creating Supabase client with URL:', supabaseUrl ? 'Set' : 'Not set');
   console.log('Using service role:', useServiceRole);
   
   return createSupabaseClient(supabaseUrl, supabaseKey, {
     auth: {
-      persistSession: true, // セッション情報を保持するように変更
-      autoRefreshToken: true, // トークンの自動更新も有効化
+      persistSession: true,
+      autoRefreshToken: true,
       detectSessionInUrl: false,
     },
+    ...(cookieStore && {
+      global: {
+        fetch: (url, init) => {
+          const cookieHeader = cookieStore.getAll()
+            .map(cookie => `${cookie.name}=${cookie.value}`)
+            .join('; ');
+          
+          init = init || {};
+          init.headers = {
+            ...init.headers,
+            Cookie: cookieHeader,
+          };
+          
+          return fetch(url, init);
+        }
+      }
+    })
   })
 }
 

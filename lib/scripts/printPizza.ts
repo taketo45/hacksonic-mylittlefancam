@@ -1,6 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { printPhoto } from '../lib/utils/printing';
+import { printPhoto } from '../../lib/utils/printing';
 
 /**
  * ピザの写真をL判用紙に印刷するスクリプト

@@ -6,7 +6,7 @@ import {
   containsChild, 
   containsSpecificChild, 
   isPositiveEmotion 
-} from '../../lib/utils/faceRecognition';
+} from '../../../lib/utils/faceRecognition';
 import { RekognitionClient } from '@aws-sdk/client-rekognition';
 
 // RekognitionClientのモック

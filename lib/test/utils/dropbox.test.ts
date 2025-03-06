@@ -6,7 +6,7 @@ import {
   createDropboxFolder, 
   createEventFolder, 
   uploadEventPhoto 
-} from '../../lib/utils/dropbox';
+} from '../../../lib/utils/dropbox';
 import { Dropbox } from 'dropbox';
 import { v4 as uuidv4 } from 'uuid';
 import 'isomorphic-fetch';

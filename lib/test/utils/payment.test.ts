@@ -5,7 +5,7 @@ import {
   handlePaymentWebhook, 
   generateReceiptUrl,
   stripe
-} from '../../lib/utils/payment';
+} from '../../../lib/utils/payment';
 import Stripe from 'stripe';
 
 // Stripeのモック

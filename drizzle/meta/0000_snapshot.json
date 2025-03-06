@@ -1,5 +1,5 @@
 {
-  "id": "e349ee53-347e-4572-942d-93069b60a440",
+  "id": "4b5c11e7-ee33-480b-966a-467c86a6b8a7",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -166,31 +166,37 @@
         },
         "event_slot_name": {
           "name": "event_slot_name",
-          "type": "varchar(100)",
+          "type": "text",
           "primaryKey": false,
           "notNull": true
         },
         "event_date": {
           "name": "event_date",
-          "type": "date",
+          "type": "text",
           "primaryKey": false,
           "notNull": false
         },
         "event_time": {
           "name": "event_time",
-          "type": "time",
+          "type": "text",
           "primaryKey": false,
           "notNull": false
         },
-        "facility_id": {
-          "name": "facility_id",
-          "type": "varchar(36)",
+        "facility_name": {
+          "name": "facility_name",
+          "type": "text",
           "primaryKey": false,
           "notNull": false
         },
-        "geo_code": {
-          "name": "geo_code",
-          "type": "varchar(100)",
+        "facility_address": {
+          "name": "facility_address",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "facility_phone": {
+          "name": "facility_phone",
+          "type": "text",
           "primaryKey": false,
           "notNull": false
         },
@@ -200,32 +206,38 @@
           "primaryKey": false,
           "notNull": false
         },
+        "photographer_id": {
+          "name": "photographer_id",
+          "type": "varchar(36)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "base_price": {
+          "name": "base_price",
+          "type": "numeric(10, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
         "event_slot_status": {
           "name": "event_slot_status",
           "type": "event_slot_status",
           "typeSchema": "public",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "default": "'準備中'"
-        },
-        "ticket_url": {
-          "name": "ticket_url",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": false
         },
         "created_at": {
           "name": "created_at",
           "type": "timestamp",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "default": "now()"
         },
         "updated_at": {
           "name": "updated_at",
           "type": "timestamp",
           "primaryKey": false,
-          "notNull": false,
+          "notNull": true,
           "default": "now()"
         }
       },
@@ -240,6 +252,19 @@
           ],
           "columnsTo": [
             "event_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "event_slot_tbl_photographer_id_host_tbl_host_id_fk": {
+          "name": "event_slot_tbl_photographer_id_host_tbl_host_id_fk",
+          "tableFrom": "event_slot_tbl",
+          "tableTo": "host_tbl",
+          "columnsFrom": [
+            "photographer_id"
+          ],
+          "columnsTo": [
+            "host_id"
           ],
           "onDelete": "no action",
           "onUpdate": "no action"
@@ -599,6 +624,12 @@
           "primaryKey": true,
           "notNull": true
         },
+        "auth_user_id": {
+          "name": "auth_user_id",
+          "type": "varchar(36)",
+          "primaryKey": false,
+          "notNull": false
+        },
         "name": {
           "name": "name",
           "type": "varchar(100)",
@@ -644,6 +675,13 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
+        "host_tbl_auth_user_id_unique": {
+          "name": "host_tbl_auth_user_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "auth_user_id"
+          ]
+        },
         "host_tbl_email_unique": {
           "name": "host_tbl_email_unique",
           "nullsNotDistinct": false,
@@ -704,6 +742,19 @@
           ],
           "columnsTo": [
             "organization_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "organization_host_tbl_host_id_host_tbl_host_id_fk": {
+          "name": "organization_host_tbl_host_id_host_tbl_host_id_fk",
+          "tableFrom": "organization_host_tbl",
+          "tableTo": "host_tbl",
+          "columnsFrom": [
+            "host_id"
+          ],
+          "columnsTo": [
+            "host_id"
           ],
           "onDelete": "no action",
           "onUpdate": "no action"
@@ -1084,6 +1135,12 @@
           "primaryKey": true,
           "notNull": true
         },
+        "auth_user_id": {
+          "name": "auth_user_id",
+          "type": "varchar(36)",
+          "primaryKey": false,
+          "notNull": false
+        },
         "name": {
           "name": "name",
           "type": "varchar(100)",
@@ -1129,6 +1186,13 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
+        "photographer_tbl_auth_user_id_unique": {
+          "name": "photographer_tbl_auth_user_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "auth_user_id"
+          ]
+        },
         "photographer_tbl_email_unique": {
           "name": "photographer_tbl_email_unique",
           "nullsNotDistinct": false,
@@ -1473,6 +1537,58 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.role_mst": {
+      "name": "role_mst",
+      "schema": "",
+      "columns": {
+        "role_id": {
+          "name": "role_id",
+          "type": "varchar(36)",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "role_name": {
+          "name": "role_name",
+          "type": "varchar(100)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_active": {
+          "name": "is_active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.seat_block_tbl": {
       "name": "seat_block_tbl",
       "schema": "",
@@ -1695,6 +1811,85 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.user_role_tbl": {
+      "name": "user_role_tbl",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "varchar(36)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "role_id": {
+          "name": "role_id",
+          "type": "varchar(36)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "assigned_at": {
+          "name": "assigned_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "assigned_by": {
+          "name": "assigned_by",
+          "type": "varchar(36)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_primary": {
+          "name": "is_primary",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": false,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "user_role_tbl_role_id_role_mst_role_id_fk": {
+          "name": "user_role_tbl_role_id_role_mst_role_id_fk",
+          "tableFrom": "user_role_tbl",
+          "tableTo": "role_mst",
+          "columnsFrom": [
+            "role_id"
+          ],
+          "columnsTo": [
+            "role_id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.user_tbl": {
       "name": "user_tbl",
       "schema": "",
@@ -1704,6 +1899,12 @@
           "type": "varchar(36)",
           "primaryKey": true,
           "notNull": true
+        },
+        "auth_user_id": {
+          "name": "auth_user_id",
+          "type": "varchar(36)",
+          "primaryKey": false,
+          "notNull": false
         },
         "name": {
           "name": "name",
@@ -1750,6 +1951,13 @@
       "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
+        "user_tbl_auth_user_id_unique": {
+          "name": "user_tbl_auth_user_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "auth_user_id"
+          ]
+        },
         "user_tbl_email_unique": {
           "name": "user_tbl_email_unique",
           "nullsNotDistinct": false,

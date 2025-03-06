@@ -1,38 +1,40 @@
-import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
-import DashboardHeader from '@/components/dashboard/header'
-import DashboardSidebar from '@/components/dashboard/sidebar'
+'use client'
 
-export default async function DashboardLayout({
+import DashboardClient from '@/components/dashboard/dashboard-client'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { useEffect, useState } from 'react'
+
+export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const supabase = createClient()
-  const { data: { session } } = await supabase.auth.getSession()
+  const [isAdmin, setIsAdmin] = useState(false)
+  const supabase = createClientComponentClient()
 
-  // デバッグ情報（ログには出ないがビルド時に確認可能）
-  console.log('Dashboard Layout - Session check:', !!session)
+  useEffect(() => {
+    const checkAdminRole = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { data: userRoles } = await supabase
+          .from('user_role_tbl')
+          .select(`
+            role_mst (
+              role_key
+            )
+          `)
+          .eq('user_id', user.id)
 
-  // ミドルウェアでもチェックしているが、念のためここでもチェック
-  // ただし、リダイレクトループを防ぐためにミドルウェアが機能していることを前提とする
-  if (!session) {
-    console.log('Dashboard Layout - No session, but middleware should have redirected already')
-    // ミドルウェアが機能していない場合のフォールバック
-    // リダイレクトループを防ぐために一時的にコメントアウト
-    // return redirect('/login')
-  }
+        setIsAdmin(userRoles?.some(role => role.role_mst?.role_key === 'SYSTEM_ADMIN') ?? false)
+      }
+    }
 
-  const { data: { user } } = await supabase.auth.getUser()
-  console.log('Dashboard Layout - User:', !!user)
+    checkAdminRole()
+  }, [supabase])
 
   return (
-    <div className="flex h-screen flex-col bg-gray-50">
-      <DashboardHeader user={user} />
-      <div className="flex flex-1 overflow-hidden">
-        <DashboardSidebar />
-        <main className="flex-1 overflow-y-auto p-6">{children}</main>
-      </div>
-    </div>
+    <DashboardClient isAdmin={isAdmin}>
+      {children}
+    </DashboardClient>
   )
 } 

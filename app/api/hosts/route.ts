@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import * as hostQueries from '@/src/db/queries';
+import * as hostQueries from '@/lib/db/queries';
 
 /**
  * GET /api/hosts

@@ -1,33 +1,40 @@
 'use client'
 
-import { useAtom } from 'jotai'
 import Link from 'next/link'
 import Image from 'next/image'
-import { useRouter } from 'next/navigation'
 import LogoutButton from '@/components/logout-button'
 import { User } from '@supabase/supabase-js'
-import { userRoleAtom, getDefaultPageForRole } from '@/lib/atoms/userRole'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { useEffect, useState } from 'react'
+import { useAtom } from 'jotai'
+import { userRoleAtom } from '@/lib/store/role'
 
-interface DashboardHeaderProps {
-  user: User | null
+type DashboardHeaderProps = {
+  isAdmin: boolean
 }
 
-export default function DashboardHeader({ user }: DashboardHeaderProps) {
+export default function DashboardHeader({ isAdmin }: DashboardHeaderProps) {
+  const [user, setUser] = useState<User | null>(null)
+  const supabase = createClientComponentClient()
   const [activeRole, setActiveRole] = useAtom(userRoleAtom)
-  const router = useRouter()
+
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      setUser(user)
+    }
+
+    getUser()
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+    })
+
+    return () => subscription.unsubscribe()
+  }, [supabase.auth])
 
   const handleRoleChange = (role: 'organizer' | 'user') => {
-    // すでに選択されているロールの場合は何もしない
-    if (role === activeRole) return
-
-    // 状態を更新（Jotaiのatomが自動的にローカルストレージに保存する）
     setActiveRole(role)
-    
-    // ロールに応じたデフォルトページにリダイレクト
-    const targetPath = getDefaultPageForRole(role)
-    
-    // ページ遷移（リロードではなく、クライアントサイドナビゲーション）
-    router.push(targetPath)
   }
 
   return (
@@ -73,6 +80,15 @@ export default function DashboardHeader({ user }: DashboardHeaderProps) {
           </div>
 
           <div className="flex items-center gap-4">
+            {/* システム管理者メニューへのリンク */}
+            {isAdmin && (
+              <Link
+                href="/admin"
+                className="rounded-md bg-gray-100 px-3 py-1 text-sm font-medium text-gray-700 hover:bg-gray-200"
+              >
+                システム管理
+              </Link>
+            )}
             <div className="text-sm">
               <p className="font-medium text-gray-700">{user?.email}</p>
             </div>

@@ -16,16 +16,19 @@ import {
 } from '@/components/ui/select';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
 // イベントの型定義
 interface Event {
-  eventId: string;
-  eventName: string;
-  eventStatus: '準備中' | '公開中' | '終了' | 'キャンセル';
-  createdAt: string;
-  updatedAt: string;
-  hostEvents?: HostEvent[];
-  eventSlots?: EventSlot[];
+  event_id: string;
+  event_name: string;
+  event_status: '準備中' | '公開中' | '終了' | 'キャンセル';
+  created_at: string;
+  updated_at: string;
+  host_event_tbl?: {
+    host_id: string;
+    event_role: string;
+  }[];
 }
 
 // ホストイベントの型定義
@@ -70,36 +73,35 @@ export default function EventsPage() {
     eventName: '',
     eventStatus: '準備中',
   });
+  const supabase = createClientComponentClient();
 
   // ユーザー認証とイベント取得
   useEffect(() => {
-    const checkAuthAndFetchEvents = async () => {
+    const fetchEvents = async () => {
       try {
-        setLoading(true);
-        // APIを使用してイベントを取得
-        const response = await fetch('/api/events');
+        const response = await fetch('/api/events', {
+          credentials: 'include',
+        });
         
         if (!response.ok) {
-          if (response.status === 401) {
-            setIsAuthenticated(false);
-            return;
-          }
-          throw new Error('イベントの取得に失敗しました');
+          throw new Error('Failed to fetch events');
         }
         
         const data = await response.json();
-        // APIレスポンスの形式に合わせて修正
-        setEvents(data.events || []);
+        console.log('Fetched events:');
+        console.log(data);
+        // APIから直接配列が返されるため、dataをそのまま使用
+        setEvents(data || []);
         setIsAuthenticated(true);
-      } catch (err) {
-        console.error('Error fetching events:', err);
-        setError(err instanceof Error ? err.message : '不明なエラーが発生しました');
+      } catch (error) {
+        console.error('Error:', error);
+        setError('イベントの取得に失敗しました');
       } finally {
         setLoading(false);
       }
     };
 
-    checkAuthAndFetchEvents();
+    fetchEvents();
   }, []);
 
   // 入力変更ハンドラ
@@ -141,6 +143,7 @@ export default function EventsPage() {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify(newEvent),
       });
       
@@ -269,13 +272,13 @@ export default function EventsPage() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {events.map((event) => {
-            const statusInfo = getStatusInfo(event.eventStatus);
+            const statusInfo = getStatusInfo(event.event_status);
             
             return (
-              <Card key={event.eventId} className="overflow-hidden">
+              <Card key={event.event_id} className="overflow-hidden">
                 <div className="p-6">
                   <div className="flex justify-between items-start mb-4">
-                    <h3 className="text-lg font-semibold">{event.eventName}</h3>
+                    <h3 className="text-lg font-semibold">{event.event_name}</h3>
                     <span
                       className={`px-2 py-1 rounded-full text-xs font-medium ${statusInfo.color}`}
                     >
@@ -284,12 +287,12 @@ export default function EventsPage() {
                   </div>
                   
                   <div className="text-sm text-gray-500 mb-4">
-                    <p>作成日: {new Date(event.createdAt).toLocaleDateString('ja-JP')}</p>
-                    <p>更新日: {new Date(event.updatedAt).toLocaleDateString('ja-JP')}</p>
+                    <p>作成日: {new Date(event.created_at).toLocaleDateString('ja-JP')}</p>
+                    <p>更新日: {new Date(event.updated_at).toLocaleDateString('ja-JP')}</p>
                   </div>
                   
                   <div className="flex space-x-2">
-                    <Link href={`/dashboard/events/${event.eventId}`} passHref>
+                    <Link href={`/dashboard/events/${event.event_id}`} passHref>
                       <Button variant="outline" size="sm">
                         詳細
                       </Button>

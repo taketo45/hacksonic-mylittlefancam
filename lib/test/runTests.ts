@@ -5,9 +5,9 @@
  * 実行方法: `npx ts-node src/test/runTests.ts`
  */
 
-const { spawn } = require('child_process');
-const path = require('path');
-const fs = require('fs');
+import { spawn } from 'child_process';
+import path from 'path';
+import fs from 'fs';
 
 // テスト対象のディレクトリ
 const TEST_DIR = path.join(__dirname, 'utils');

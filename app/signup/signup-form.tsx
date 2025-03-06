@@ -75,7 +75,7 @@ export default function SignupForm() {
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-milab-500 focus:outline-none focus:ring-milab-500"
+            className="mt-1 block  bg-white text-black w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-milab-500 focus:outline-none focus:ring-milab-500"
           />
         </div>
 
@@ -91,7 +91,7 @@ export default function SignupForm() {
             required
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-milab-500 focus:outline-none focus:ring-milab-500"
+            className="mt-1 block bg-white text-black w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-milab-500 focus:outline-none focus:ring-milab-500"
           />
           <p className="mt-1 text-xs text-gray-500">8文字以上の英数字を入力してください</p>
         </div>
@@ -108,7 +108,7 @@ export default function SignupForm() {
             required
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
-            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-milab-500 focus:outline-none focus:ring-milab-500"
+            className="mt-1 block bg-white text-black w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-milab-500 focus:outline-none focus:ring-milab-500"
           />
         </div>
       </div>

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import * as queries from '@/src/db/queries';
+import * as queries from '@/lib/db/queries';
 
 /**
  * GET /api/events/[id]/slots/[slotId]

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { eventQueries } from '@/src/db/queries';
-import { createClient } from '@/lib/supabase/server';
+import { eventQueries } from '@/lib/db/queries';
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
+import { cookies } from 'next/headers'
 
 /**
  * 特定のイベントを取得するAPI
@@ -14,14 +15,13 @@ export async function GET(
 ) {
   try {
     const { id } = params;
-    
-    // Supabaseクライアントを作成
-    const supabase = createClient();
-    
+
+    // Supabaseクライアントを作成 
+    const supabase = createRouteHandlerClient({ cookies })
     // ユーザー情報を取得
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { session } } = await supabase.auth.getSession()
     
-    if (!user) {
+    if (!session) {
       return NextResponse.json(
         { error: 'ユーザーが認証されていません' },
         { status: 401 }
@@ -39,7 +39,7 @@ export async function GET(
     }
     
     // ユーザーがイベントの主催者かチェック
-    const isOrganizer = event.hostEvents.some((he: { hostId: string }) => he.hostId === user.id);
+    const isOrganizer = event.hostEvents.some((he: { hostId: string }) => he.hostId === session.user.id);
     
     if (!isOrganizer) {
       return NextResponse.json(
@@ -70,17 +70,17 @@ export async function PUT(
 ) {
   try {
     const { id } = params;
+
+
+    // Supabaseクライアントを作成 
+    const supabase = createRouteHandlerClient({ cookies })
+    // ユーザー情報を取得
+    const { data: { session } } = await supabase.auth.getSession()
     
     // リクエストボディを取得
     const body = await req.json();
     
-    // Supabaseクライアントを作成
-    const supabase = createClient();
-    
-    // ユーザー情報を取得
-    const { data: { user } } = await supabase.auth.getUser();
-    
-    if (!user) {
+    if (!session?.user) {
       return NextResponse.json(
         { error: 'ユーザーが認証されていません' },
         { status: 401 }
@@ -98,7 +98,7 @@ export async function PUT(
     }
     
     // ユーザーがイベントの主催者かチェック
-    const isOrganizer = event.hostEvents.some((he: { hostId: string }) => he.hostId === user.id);
+    const isOrganizer = event.hostEvents.some((he: { hostId: string }) => he.hostId === session.user.id);
     
     if (!isOrganizer) {
       return NextResponse.json(
@@ -136,13 +136,13 @@ export async function DELETE(
   try {
     const { id } = params;
     
-    // Supabaseクライアントを作成
-    const supabase = createClient();
-    
+
+    // Supabaseクライアントを作成 
+    const supabase = createRouteHandlerClient({ cookies })
     // ユーザー情報を取得
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { session } } = await supabase.auth.getSession()
     
-    if (!user) {
+    if (!session?.user) {
       return NextResponse.json(
         { error: 'ユーザーが認証されていません' },
         { status: 401 }
@@ -160,7 +160,7 @@ export async function DELETE(
     }
     
     // ユーザーがイベントの主催者かチェック
-    const isOrganizer = event.hostEvents.some((he: { hostId: string }) => he.hostId === user.id);
+    const isOrganizer = event.hostEvents.some((he: { hostId: string }) => he.hostId === session.user.id);
     
     if (!isOrganizer) {
       return NextResponse.json(

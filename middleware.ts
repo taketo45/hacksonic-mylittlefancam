@@ -1,89 +1,84 @@
+import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { createServerClient } from '@supabase/ssr'
 
 export async function middleware(request: NextRequest) {
-  // デバッグ情報
-  console.log('Middleware - Request URL:', request.nextUrl.pathname);
-  
-  let response = NextResponse.next({
-    request: {
-      headers: request.headers,
-    },
-  })
+  const res = NextResponse.next()
+  const supabase = createMiddlewareClient({ req: request, res })
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return request.cookies.get(name)?.value
-        },
-        set(name: string, value: string, options: any) {
-          request.cookies.set({
-            name,
-            value,
-            ...options,
-          })
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          })
-          response.cookies.set({
-            name,
-            value,
-            ...options,
-          })
-        },
-        remove(name: string, options: any) {
-          request.cookies.set({
-            name,
-            value: '',
-            ...options,
-          })
-          response = NextResponse.next({
-            request: {
-              headers: request.headers,
-            },
-          })
-          response.cookies.set({
-            name,
-            value: '',
-            ...options,
-          })
-        },
-      },
+  // 未認証ユーザーをログインページにリダイレクト
+  if (!session) {
+    return NextResponse.redirect(new URL('/', request.url))
+  }
+
+  // ユーザーのロール情報を取得
+  const { data: userRoles } = await supabase
+    .from('user_role_tbl')
+    .select(`
+      role_id,
+      role_mst!inner (
+        role_name
+      )
+    `)
+    .eq('user_id', session.user.id)
+
+  const roleNames = userRoles?.map(role => role.role_mst.role_name) || []
+  console.log('Middleware checking roles:', roleNames)
+
+  // 管理者画面へのアクセス制御
+  if (request.nextUrl.pathname.startsWith('/admin')) {
+    if (!roleNames.includes('admin')) {
+      return NextResponse.redirect(new URL('/dashboard', request.url))
     }
-  )
-
-  const { data: { session } } = await supabase.auth.getSession()
-  
-  // デバッグ情報
-  console.log('Middleware - Session exists:', !!session);
-
-  // ルートページへのアクセスの場合、ダッシュボードにリダイレクト
-  if (request.nextUrl.pathname === '/' && session) {
-    console.log('Middleware - Redirecting from root to dashboard');
-    return NextResponse.redirect(new URL('/dashboard', request.url))
   }
 
-  // ダッシュボードへのアクセスは認証が必要
-  if (request.nextUrl.pathname.startsWith('/dashboard') && !session) {
-    console.log('Middleware - No session, redirecting to login');
-    return NextResponse.redirect(new URL('/login', request.url))
+  // ダッシュボードへのアクセス制御
+  if (request.nextUrl.pathname.startsWith('/dashboard')) {
+    // 基本的なダッシュボードアクセス権限チェック
+    if (!roleNames.some(name => ['user', 'organizer', 'photographer', 'admin'].includes(name))) {
+      return NextResponse.redirect(new URL('/', request.url))
+    }
+
+    // イベント管理へのアクセス制御
+    if (request.nextUrl.pathname.startsWith('/dashboard/events')) {
+      if (!roleNames.some(name => ['organizer', 'admin'].includes(name))) {
+        return NextResponse.redirect(new URL('/dashboard', request.url))
+      }
+    }
+
+    // 写真アップロードへのアクセス制御
+    if (request.nextUrl.pathname.startsWith('/dashboard/photos/upload')) {
+      if (!roleNames.some(name => ['photographer', 'organizer', 'admin'].includes(name))) {
+        return NextResponse.redirect(new URL('/dashboard/photos', request.url))
+      }
+    }
+
+    // 印刷管理へのアクセス制御
+    if (request.nextUrl.pathname.startsWith('/dashboard/print')) {
+      if (!roleNames.some(name => ['organizer', 'admin'].includes(name))) {
+        return NextResponse.redirect(new URL('/dashboard', request.url))
+      }
+    }
+
+    // その他のページは認証済みユーザーなら全てアクセス可能
   }
 
-  // ログイン済みの場合、ログインページとサインアップページにアクセスするとダッシュボードにリダイレクト
-  if ((request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/signup') && session) {
-    console.log('Middleware - Session exists, redirecting to dashboard');
-    return NextResponse.redirect(new URL('/dashboard', request.url))
-  }
-
-  return response
+  return res
 }
 
 export const config = {
-  matcher: ['/', '/dashboard/:path*', '/login', '/signup'],
+  matcher: [
+    '/dashboard/:path*',
+    '/admin/:path*',
+    '/dashboard/events/:path*',
+    '/dashboard/photos/:path*',
+    '/dashboard/edit/:path*',
+    '/dashboard/oshi-wipe/:path*',
+    '/dashboard/cart/:path*',
+    '/dashboard/purchases/:path*',
+    '/dashboard/print/:path*',
+  ],
 } 

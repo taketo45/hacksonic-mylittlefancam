@@ -16,6 +16,28 @@ export const eventSlotStatusEnum = pgEnum('event_slot_status', ['準備中', '�
 // 印刷状態の列挙型
 export const printStatusEnum = pgEnum('print_status', ['準備中', '印刷中', '印刷完了', '発送準備中', '発送完了', 'キャンセル', 'エラー']);
 
+// ロールマスタテーブル
+export const roleMst = pgTable('role_mst', {
+  roleId: varchar('role_id', { length: 36 }).primaryKey(),
+  roleName: varchar('role_name', { length: 100 }).notNull(),
+  description: text('description'),
+  isActive: boolean('is_active').default(true),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
+// ユーザーロール関連テーブル
+export const userRoleTbl = pgTable('user_role_tbl', {
+  id: serial('id').primaryKey(),
+  userId: varchar('user_id', { length: 36 }).notNull(),
+  roleId: varchar('role_id', { length: 36 }).notNull().references(() => roleMst.roleId),
+  assignedAt: timestamp('assigned_at').defaultNow(),
+  assignedBy: varchar('assigned_by', { length: 36 }),
+  isPrimary: boolean('is_primary').default(false),
+  createdAt: timestamp('created_at').defaultNow(),
+  updatedAt: timestamp('updated_at').defaultNow(),
+});
+
 // 組織マスタテーブル
 export const organizationMst = pgTable('organization_mst', {
   organizationId: varchar('organization_id', { length: 36 }).primaryKey(),
@@ -31,6 +53,7 @@ export const organizationMst = pgTable('organization_mst', {
 // 主催者テーブル
 export const hostTbl = pgTable('host_tbl', {
   hostId: varchar('host_id', { length: 36 }).primaryKey(),
+  auth_user_id: varchar('auth_user_id', { length: 36 }).unique(), // 追加
   name: varchar('name', { length: 100 }).notNull(),
   email: varchar('email', { length: 255 }).notNull().unique(),
   password: varchar('password', { length: 255 }).notNull(),
@@ -61,7 +84,8 @@ export const hostDetailTbl = pgTable('host_detail_tbl', {
 
 // イベントテーブル
 export const eventTbl = pgTable('event_tbl', {
-  eventId: varchar('event_id', { length: 36 }).primaryKey(),
+  // eventId: varchar('event_id', { length: 36 }).primaryKey(),
+  eventId: uuid('event_id').defaultRandom().primaryKey(),
   eventName: varchar('event_name', { length: 100 }).notNull(),
   eventStatus: eventStatusEnum('event_status').default('準備中'),
   createdAt: timestamp('created_at').defaultNow(),
@@ -137,6 +161,7 @@ export const seatBlockTbl = pgTable('seat_block_tbl', {
 // ユーザーテーブル
 export const userTbl = pgTable('user_tbl', {
   userId: varchar('user_id', { length: 36 }).primaryKey(),
+  auth_user_id: varchar('auth_user_id', { length: 36 }).unique(), // 追加
   name: varchar('name', { length: 100 }).notNull(),
   email: varchar('email', { length: 255 }).notNull().unique(),
   password: varchar('password', { length: 255 }).notNull(),
@@ -161,6 +186,7 @@ export const userParticipationTbl = pgTable('user_participation_tbl', {
 // 撮影者テーブル
 export const photographerTbl = pgTable('photographer_tbl', {
   photographerId: varchar('photographer_id', { length: 36 }).primaryKey(),
+  auth_user_id: varchar('auth_user_id', { length: 36 }).unique(), // 追加
   name: varchar('name', { length: 100 }).notNull(),
   email: varchar('email', { length: 255 }).notNull().unique(),
   password: varchar('password', { length: 255 }).notNull(),
@@ -294,6 +320,7 @@ export const hostRelations = relations(hostTbl, ({ many, one }) => ({
   hostDetails: one(hostDetailTbl),
   hostEvents: many(hostEventTbl),
   hostEventSlots: many(hostEventSlotTbl),
+  userRoles: many(userRoleTbl),
 }));
 
 // hostDetailTblのリレーション定義を追加
@@ -357,11 +384,13 @@ export const userRelations = relations(userTbl, ({ many }) => ({
   processedPhotos: many(processedPhotoTbl),
   carts: many(cartTbl),
   purchases: many(purchaseTbl),
+  userRoles: many(userRoleTbl),
 }));
 
 export const photographerRelations = relations(photographerTbl, ({ many }) => ({
   photographerAssigns: many(photographerAssignTbl),
   photoShoots: many(photoShootTbl),
+  userRoles: many(userRoleTbl),
 }));
 
 export const photoShootRelations = relations(photoShootTbl, ({ many, one }) => ({
@@ -442,4 +471,53 @@ export const printManagementRelations = relations(printManagementTbl, ({ one }) 
     fields: [printManagementTbl.processedPhotoId],
     references: [processedPhotoTbl.processedPhotoId],
   }),
+}));
+
+// auth_user_idのリレーション定義を追加
+export const userAuthRelations = relations(userTbl, ({ one, many }) => ({
+  // 既存のリレーション
+  userParticipations: many(userParticipationTbl),
+  processedPhotos: many(processedPhotoTbl),
+  carts: many(cartTbl),
+  purchases: many(purchaseTbl),
+  // 新規追加: ロール関連
+  userRoles: many(userRoleTbl),
+}));
+
+export const hostAuthRelations = relations(hostTbl, ({ one, many }) => ({
+  // 既存のリレーション
+  organizationHosts: many(organizationHostTbl),
+  hostDetails: one(hostDetailTbl),
+  hostEvents: many(hostEventTbl),
+  hostEventSlots: many(hostEventSlotTbl),
+  // 新規追加: ロール関連
+  userRoles: many(userRoleTbl),
+}));
+
+export const photographerAuthRelations = relations(photographerTbl, ({ many }) => ({
+  // 既存のリレーション
+  photographerAssigns: many(photographerAssignTbl),
+  photoShoots: many(photoShootTbl),
+  // 新規追加: ロール関連
+  userRoles: many(userRoleTbl),
+}));
+
+export const userRoleRelations = relations(userRoleTbl, ({ one }) => ({
+  user: one(userTbl, {
+    fields: [userRoleTbl.userId],
+    references: [userTbl.userId],
+  }),
+  host: one(hostTbl, {
+    fields: [userRoleTbl.userId],
+    references: [hostTbl.hostId],
+  }),
+  photographer: one(photographerTbl, {
+    fields: [userRoleTbl.userId],
+    references: [photographerTbl.photographerId],
+  }),
+  role: one(roleMst, {
+    fields: [userRoleTbl.roleId],
+    references: [roleMst.roleId],
+  }),
 })); 
+

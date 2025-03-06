@@ -8,15 +8,13 @@ import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 
 export default async function Home() {
-  // セッションをチェックし、ログイン済みの場合はダッシュボードにリダイレクト
-  // ミドルウェアでも同様のチェックを行っているが、念のため
   const supabase = createClient()
   const { data: { session } } = await supabase.auth.getSession()
   
-  if (session) {
-    console.log('Root page - Session exists, redirecting to dashboard');
-    redirect('/dashboard')
-  }
+  // セッションが存在する場合はダッシュボードにリダイレクト
+  // if (session) {
+  //   redirect('/dashboard')
+  // }
 
   return (
     <div className="flex min-h-screen flex-col bg-gradient">
@@ -34,21 +32,21 @@ export default async function Home() {
             <span className="text-xl font-bold text-gradient">My Little Fancam</span>
           </div>
           <nav className="hidden md:flex items-center gap-6">
-            <Link href="#features" className="text-sm font-medium hover:text-milab-600">
+            <Link href="#features" className="text-sm font-medium text-gradient hover:text-milab-600">
               特徴
             </Link>
-            <Link href="#how-it-works" className="text-sm font-medium hover:text-milab-600">
+            <Link href="#how-it-works" className="text-sm font-medium text-gradient hover:text-milab-600">
               使い方
             </Link>
-            <Link href="#testimonials" className="text-sm font-medium hover:text-milab-600">
+            <Link href="#testimonials" className="text-sm font-medium text-gradient hover:text-milab-600">
               お客様の声
             </Link>
-            <Link href="#pricing" className="text-sm font-medium hover:text-milab-600">
+            <Link href="#pricing" className="text-sm font-medium text-gradient hover:text-milab-600">
               料金
             </Link>
           </nav>
           <div className="flex items-center gap-4">
-            <Link href="/login" className="text-sm font-medium hover:text-milab-600 hidden md:block">
+            <Link href="/login" className="text-sm font-medium hover:text-milab-600 md:block text-gradient">
               ログイン
             </Link>
             <button className="inline-flex h-10 items-center justify-center rounded-md bg-milab-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-milab-600 focus:outline-none focus:ring-2 focus:ring-milab-400 focus:ring-offset-2">
@@ -79,7 +77,7 @@ export default async function Home() {
                     今すぐ始める
                   </Link>
                 </button>
-                <button className="inline-flex h-11 items-center justify-center rounded-md border border-input bg-white px-8 py-2 text-sm font-medium transition-colors hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-milab-400 focus:ring-offset-2">
+                <button className="inline-flex h-11 items-center justify-center rounded-md border-input bg-white px-8 py-2 text-sm font-medium transition-colors text-blue-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-milab-400 focus:ring-offset-2">
                   <Link href="#how-it-works">詳しく見る</Link>
                 </button>
               </div>

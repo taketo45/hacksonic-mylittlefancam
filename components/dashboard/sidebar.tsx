@@ -1,9 +1,11 @@
 'use client'
 
-import { useAtom } from 'jotai'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { userRoleAtom } from '@/lib/atoms/userRole'
+import { useAtom } from 'jotai'
+import { userRoleAtom } from '@/lib/store/role'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 
 // 主催者・撮影者向けのメニュー項目
 const organizerMenuItems = [
@@ -215,10 +217,39 @@ const userMenuItems = [
 
 export default function DashboardSidebar() {
   const pathname = usePathname()
-  const [userRole] = useAtom(userRoleAtom)
-  
-  // ユーザーロールに応じたメニュー項目を選択
-  const menuItems = userRole === 'organizer' ? organizerMenuItems : userMenuItems
+  const [activeRole] = useAtom(userRoleAtom)
+  const [isAdmin, setIsAdmin] = useState(false)
+  const supabase = createClientComponentClient()
+
+  useEffect(() => {
+    const checkAdminRole = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const { data: userRoles } = await supabase
+          .from('user_role_tbl')
+          .select(`
+            role_mst (
+              role_key
+            )
+          `)
+          .eq('user_id', user.id)
+
+        setIsAdmin(userRoles?.some(role => role.role_mst?.role_key === 'SYSTEM_ADMIN') ?? false)
+      }
+    }
+
+    checkAdminRole()
+  }, [supabase.auth])
+
+  // システム管理者の場合は、activeRoleに応じて表示するメニューを切り替え
+  // それ以外の場合は、割り当てられたロールに応じたメニューのみを表示
+  const menuItems = isAdmin
+    ? activeRole === 'organizer'
+      ? organizerMenuItems
+      : userMenuItems
+    : activeRole === 'organizer'
+    ? organizerMenuItems
+    : userMenuItems
 
   return (
     <aside className="w-64 border-r bg-white">

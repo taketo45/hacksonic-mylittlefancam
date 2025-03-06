@@ -16,7 +16,9 @@ import {
   purchaseTbl, 
   printManagementTbl,
   hostEventTbl,
-  userParticipationTbl
+  userParticipationTbl,
+  roleMst,
+  userRoleTbl
 } from './schema';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -707,6 +709,42 @@ export const purchaseQueries = {
       .set({ ...data, updatedAt: new Date() })
       .where(eq(printManagementTbl.id, id))
       .returning();
+  },
+};
+
+// ロール関連のクエリ
+export const roleQueries = {
+  createRole: async (data: {
+    roleName: string;
+    description?: string;
+    isActive?: boolean;
+  }) => {
+    const dbInstance = checkDb();
+    const roleId = uuidv4();
+    return await dbInstance.insert(roleMst).values({
+      roleId,
+      ...data,
+    }).returning();
+  },
+
+  assignRole: async (data: {
+    userId: string;
+    roleId: string;
+    assignedBy?: string;
+    isPrimary?: boolean;
+  }) => {
+    const dbInstance = checkDb();
+    return await dbInstance.insert(userRoleTbl).values(data).returning();
+  },
+
+  getUserRoles: async (userId: string) => {
+    const dbInstance = checkDb();
+    return await dbInstance.query.userRoleTbl.findMany({
+      where: eq(userRoleTbl.userId, userId),
+      with: {
+        role: true,
+      },
+    });
   },
 };
 

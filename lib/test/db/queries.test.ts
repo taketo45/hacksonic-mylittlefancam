@@ -5,8 +5,8 @@ import {
   userQueries, 
   photoQueries, 
   purchaseQueries 
-} from '../../db/queries';
-import { db } from '../../db';
+} from '../../../lib/db/queries';
+import { db } from '../../../lib/db';
 import { v4 as uuid } from 'uuid';
 
 // データベースのモック

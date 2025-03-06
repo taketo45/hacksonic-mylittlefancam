@@ -4,7 +4,7 @@ import {
   blurImage, 
   reduceQuality, 
   createSampleImage 
-} from '../../lib/utils/photoProcessing';
+} from '../../../lib/utils/photoProcessing';
 
 // モック用のBlobを作成する関数
 function createMockBlob(width: number, height: number): Promise<Blob> {

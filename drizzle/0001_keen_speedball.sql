@@ -1,1 +1,0 @@
-ALTER TABLE "organization_host_tbl" ADD CONSTRAINT "organization_host_tbl_host_id_host_tbl_host_id_fk" FOREIGN KEY ("host_id") REFERENCES "public"."host_tbl"("host_id") ON DELETE no action ON UPDATE no action;

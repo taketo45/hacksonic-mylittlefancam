@@ -39,7 +39,7 @@ function DashboardCard({
       className="block rounded-lg border border-gray-200 bg-white p-6 shadow-sm transition-all hover:shadow-md relative"
     >
       {isNew && (
-        <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full">
+        <span className="absolute -top-2 -right-2 bg-gradient-to-r from-purple-600 to-pink-600 text-white text-xs px-2 py-1 rounded-full animate-pulse">
           NEW
         </span>
       )}
@@ -62,19 +62,53 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const fetchUserData = async () => {
-      setIsLoading(true)
-      const supabase = createClient()
-      const { data: { user } } = await supabase.auth.getUser()
-      
-      if (user) {
-        setUserName(user.email || null)
+      try {
+        setIsLoading(true)
+        const supabase = createClient()
+        
+        // セッション情報を取得
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+        
+        if (sessionError) {
+          throw sessionError
+        }
+
+        if (!session) {
+          router.push('/')
+          return
+        }
+
+        // ユーザー情報を取得
+        const { data: { user }, error: userError } = await supabase.auth.getUser()
+        
+        if (userError) {
+          throw userError
+        }
+
+        if (user) {
+          setUserName(user.email || null)
+        }
+
+        // セッションの更新を監視
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+          if (!session) {
+            router.push('/')
+          }
+        })
+
+        return () => {
+          subscription.unsubscribe()
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error)
+        router.push('/')
+      } finally {
+        setIsLoading(false)
       }
-      
-      setIsLoading(false)
     }
     
     fetchUserData()
-  }, [])
+  }, [router])
 
   if (isLoading) {
     return (
@@ -93,11 +127,11 @@ export default function DashboardPage() {
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-bold text-gray-900">ダッシュボード</h1>
           <span className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-3 py-1 rounded-full text-sm font-medium animate-pulse">
-            ハッカソンデモ
+            開発モード
           </span>
         </div>
         <p className="mt-1 text-gray-600">
-          こんにちは、{userName || 'ゲスト'}さん。SmileShareへようこそ！
+          こんにちは、{userName || 'ゲスト'}さん。My Little Fancamへようこそ！
         </p>
       </div>
 
@@ -108,7 +142,7 @@ export default function DashboardPage() {
             <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
-            ハッカソン特別機能
+            開発時機能
           </h2>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             <DashboardCard
@@ -128,6 +162,18 @@ export default function DashboardPage() {
               description="SNSにアップロードしても安心な顔マスキング機能"
               href="/dashboard/edit"
               color="red"
+              isNew={true}
+              icon={
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                </svg>
+              }
+            />
+                        <DashboardCard
+              title="システム管理者機能"
+              description="ユーザーの権限変更・ログ管理・バッチ管理"
+              href="/admin"
+              color="blue"
               isNew={true}
               icon={
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">

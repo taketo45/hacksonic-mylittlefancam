@@ -60,6 +60,7 @@ export default function NewEventPage() {
       
       // APIを使用してイベントを作成
       const response = await fetch('/api/events', {
+        // credentials: 'include',
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

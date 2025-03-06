@@ -3,7 +3,7 @@ import {
   printMultiplePhotos, 
   checkPrintJobStatus, 
   cancelPrintJob 
-} from '../../lib/utils/printing';
+} from '../../../lib/utils/printing';
 import axios from 'axios';
 import FormData from 'form-data';
 

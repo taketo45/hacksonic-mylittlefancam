@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google'
 import './globals.css'
 import { Toaster } from "@/components/ui/sonner"
 import { ThemeProvider } from "@/components/theme-provider"
+import { Noto_Sans_JP } from 'next/font/google'
 
 const inter = Inter({ subsets: ['latin'] })
 
